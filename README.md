@@ -22,6 +22,8 @@ Sign in as `alice@folio.demo`, `ben@folio.demo` or `clara@folio.demo` with the p
 Use Node.js 22 or later.
 
 ```sh
+git clone https://github.com/murtaza-ch/folio-docs-assessment.git
+cd folio-docs-assessment
 npm ci
 cp .env.example .env.local
 ```

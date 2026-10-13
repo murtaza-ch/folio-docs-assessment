@@ -40,9 +40,6 @@ export default function ReportPage() {
           dangerouslySetInnerHTML={{ __html: html }}
         />
       </main>
-      <footer className="report-footer">
-        Folio assessment · Next.js, Chakra UI and MongoDB Atlas
-      </footer>
     </div>
   );
 }

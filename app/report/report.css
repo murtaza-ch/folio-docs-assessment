@@ -98,13 +98,6 @@
   height: auto;
   margin: 20px 0;
 }
-.report-footer {
-  padding: 20px 24px;
-  border-top: 1px solid var(--line);
-  color: var(--ink-3);
-  text-align: center;
-  font-size: 12px;
-}
 @media (max-width: 540px) {
   .report-main {
     padding: 32px 16px 48px;
@@ -132,8 +125,7 @@
   }
 }
 @media print {
-  .report-nav,
-  .report-footer {
+  .report-nav {
     display: none;
   }
   .report-main {

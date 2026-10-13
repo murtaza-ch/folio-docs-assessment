@@ -4,6 +4,19 @@ I implemented Folio, a document workspace with authenticated accounts, rich text
 
 [Live app](https://folio-docs-assessment.vercel.app) · [Public source](https://github.com/murtaza-ch/folio-docs-assessment)
 
+## Submission folder
+
+| Included material                                       | File or folder                                             |
+| ------------------------------------------------------- | ---------------------------------------------------------- |
+| Start here, app/report/repository links and demo access | `00_START_HERE.txt`, `SOURCE_CODE_URL.txt`, `live-url.txt` |
+| Setup and implementation report                         | `README.md`, `SUBMISSION.md`, `Folio-report.pdf`           |
+| Architecture, AI workflow and recording plan            | `docs/`                                                    |
+| Interface screenshots                                   | `screenshots/`                                             |
+| Architecture diagram                                    | `public/report-flow.svg`                                   |
+| Walkthrough URL                                         | `walkthrough-url.txt`, pending my recording                |
+
+I provide the source through the public GitHub repository instead of a source-code archive.
+
 ## Review access
 
 Use `alice@folio.demo`, `ben@folio.demo` or `clara@folio.demo` with the public demo password `FolioDemo!2026`. New accounts receive an empty workspace.
@@ -45,6 +58,6 @@ I keep credentials server-side, hash passwords with scrypt, store session-token 
 
 Presence polls every 3 seconds; it does not merge simultaneous keystrokes or show live cursors. Comments attach to documents. History keeps up to 50 previous snapshots within a 6 MB BSON budget. PDF supports up to 200 pages and the bundled font's glyph set; unsupported text can be exported as Markdown.
 
-Password reset, email verification, folders, `.docx` and Drive import are outside this implementation. My walkthrough recording and Drive submission upload remain pending.
+Password reset, email verification, folders, `.docx` and Drive import are outside this implementation. My walkthrough recording remains pending. With another 2-4 hours, I would prioritize password recovery and interrupted-save browser coverage.
 
 [Architecture](https://github.com/murtaza-ch/folio-docs-assessment/blob/main/docs/ARCHITECTURE.md) · [AI workflow](https://github.com/murtaza-ch/folio-docs-assessment/blob/main/docs/AI_WORKFLOW.md) · [Recording plan](https://github.com/murtaza-ch/folio-docs-assessment/blob/main/docs/WALKTHROUGH.md)

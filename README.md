@@ -49,7 +49,9 @@ To run the API flow check against your running app, use `npm run test:flows`. It
 
 ## Deploy
 
-Import the repository into Vercel. Add the server environment variables, run database setup against the intended demo database, then build with `npm run build`. The deployment needs a persistent MongoDB database. Configure the host so reviewers can open the live URL without joining a hosting team.
+This repository is connected to the `folio-docs-assessment` Vercel project. Pushes to `main` deploy the production app.
+
+For a separate deployment, import the repository into Vercel. Add the server environment variables, run database setup against the intended demo database, then build with `npm run build`. The deployment needs a persistent MongoDB database. Configure the host so reviewers can open the live URL without joining a hosting team.
 
 Do not include `.env.local`, connection credentials, local database files or `node_modules` in the submission folder.
 

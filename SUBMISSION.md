@@ -8,6 +8,8 @@
 - Google Drive folder: pending upload of this source package and the walkthrough URL.
 - Demo accounts: Alice Morgan, Ben Carter and Clara Park. Choose an account in the bottom-left switcher. No password is required.
 
+The private GitHub repository is connected to Vercel with `main` as the production branch.
+
 The live production URL was checked without Vercel login. Reviewers can use seeded documents and create their own sample documents.
 
 ## Included files

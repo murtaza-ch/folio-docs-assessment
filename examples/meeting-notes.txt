@@ -1,0 +1,4 @@
+Meeting notes
+
+A plain-text import becomes an editable document.
+Formatting can be added after import.

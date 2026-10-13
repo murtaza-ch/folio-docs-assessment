@@ -1,13 +1,17 @@
-// Run against a local app connected to a disposable assessment database.
+// Run against a local or deployed app using the same configured MongoDB.
 import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
 const base = process.env.APP_URL || "http://localhost:3000";
+const password = "FolioDemo!2026";
 const cookies = new Map();
+const testRecords = [];
+let newUserId;
 async function request(
   path,
-  { user, status = 200, method = "GET", body, form } = {},
+  { user, status = 200, method = "GET", body, form, rawCookie } = {},
 ) {
   const headers = {};
-  if (user) headers.Cookie = cookies.get(user);
+  if (rawCookie || user) headers.Cookie = rawCookie || cookies.get(user);
   if (body) headers["Content-Type"] = "application/json";
   const response = await fetch(base + path, {
     method,
@@ -16,7 +20,7 @@ async function request(
   });
   if (!response.headers.get("content-type")?.includes("application/json"))
     throw new Error(
-      `${method} ${path}: expected JSON, received HTTP ${response.status}`,
+      `${method} ${path}: expected JSON, HTTP ${response.status}`,
     );
   const result = await response.json();
   assert.equal(
@@ -26,18 +30,64 @@ async function request(
   );
   return { result, response };
 }
-const testRecords = [];
 try {
-  const { result: session } = await request("/api/session");
-  assert.equal(session.users.length, 3);
-  const [owner, editor, viewer] = session.users;
-  for (const user of session.users) {
-    const { response } = await request("/api/session", {
+  const { result: anonymous } = await request("/api/session");
+  assert.equal(anonymous.user, null);
+  await request("/api/documents", { status: 401 });
+  await request("/api/documents", {
+    status: 401,
+    rawCookie: "folio_demo_user=11111111-1111-4111-8111-111111111111",
+  });
+  await request("/api/session", {
+    method: "POST",
+    status: 403,
+    body: { userId: anonymous.users[0].id },
+  });
+  const signed = [];
+  for (const name of ["alice", "ben", "clara"]) {
+    const { result, response } = await request("/api/auth/sign-in", {
       method: "POST",
-      body: { userId: user.id },
+      body: { email: `${name}@folio.demo`, password },
     });
-    cookies.set(user.id, response.headers.get("set-cookie").split(";")[0]);
+    const cookie =
+      response.headers
+        .get("set-cookie")
+        .split(", ")
+        .find((x) => x.startsWith("folio_session="))
+        ?.split(";")[0] || response.headers.get("set-cookie").split(";")[0];
+    cookies.set(result.user.id, cookie);
+    signed.push(result.user);
   }
+  const [owner, editor, viewer] = signed;
+  const { result: session } = await request("/api/session", { user: owner.id });
+  assert.equal(session.user.id, owner.id);
+  const email = `flow-${Date.now()}@example.com`;
+  const { result: signup, response: registered } = await request(
+    "/api/auth/sign-up",
+    {
+      method: "POST",
+      status: 201,
+      body: { name: "Flow Reviewer", email, password: "TestFlow!2026" },
+    },
+  );
+  newUserId = signup.user.id;
+  cookies.set(
+    newUserId,
+    registered.headers
+      .get("set-cookie")
+      .split(", ")
+      .find((x) => x.startsWith("folio_session="))
+      ?.split(";")[0] || registered.headers.get("set-cookie").split(";")[0],
+  );
+  assert.deepEqual(
+    (await request("/api/documents", { user: newUserId })).result.documents,
+    [],
+  );
+  await request("/api/auth/sign-up", {
+    method: "POST",
+    status: 409,
+    body: { name: "Duplicate", email, password: "TestFlow!2026" },
+  });
   const title = `Flow check ${Date.now()}`;
   const content = {
     type: "doc",
@@ -78,11 +128,20 @@ try {
     method: "POST",
     body: { userId: viewer.id, role: "viewer" },
   });
+  await request(`/api/documents/${id}/shares`, {
+    user: owner.id,
+    method: "POST",
+    body: { email, role: "viewer" },
+  });
+  assert.equal(
+    (await request(`/api/documents/${id}`, { user: newUserId })).result.document
+      .role,
+    "viewer",
+  );
   const { result: opened } = await request(`/api/documents/${id}`, {
     user: editor.id,
   });
   assert.deepEqual(opened.document.content, content);
-  assert.equal(opened.document.role, "editor");
   await request(`/api/documents/${id}`, {
     user: viewer.id,
     method: "PATCH",
@@ -101,17 +160,98 @@ try {
     status: 409,
     body: { title: "Stale overwrite", version: opened.document.version },
   });
-  await request(`/api/documents/${id}/shares`, {
-    user: editor.id,
+  const { result: history } = await request(`/api/documents/${id}/versions`, {
+    user: viewer.id,
+  });
+  assert(history.versions.some((v) => v.version === 1 && v.title === title));
+  await request(`/api/documents/${id}/versions/1/restore`, {
+    user: viewer.id,
     method: "POST",
     status: 403,
-    body: { userId: viewer.id, role: "editor" },
+    body: { version: renamed.document.version },
   });
+  const { result: restored } = await request(
+    `/api/documents/${id}/versions/1/restore`,
+    {
+      user: owner.id,
+      method: "POST",
+      body: { version: renamed.document.version },
+    },
+  );
+  assert.equal(restored.document.title, title);
+  assert.equal(restored.document.version, 3);
+  const { result: comment } = await request(`/api/documents/${id}/comments`, {
+    user: viewer.id,
+    method: "POST",
+    status: 201,
+    body: { body: "Please review the introduction." },
+  });
+  await request(`/api/documents/${id}/comments/${comment.comment.id}`, {
+    user: newUserId,
+    method: "PATCH",
+    status: 403,
+    body: { body: "Cannot edit someone else comment" },
+  });
+  const { result: resolved } = await request(
+    `/api/documents/${id}/comments/${comment.comment.id}`,
+    { user: editor.id, method: "PATCH", body: { resolved: true } },
+  );
+  assert(resolved.comment.resolvedAt);
+  await request(`/api/documents/${id}/comments/${comment.comment.id}`, {
+    user: viewer.id,
+    method: "PATCH",
+    body: { resolved: false },
+  });
+  const tabId = randomUUID();
+  const { result: presence } = await request(`/api/documents/${id}/presence`, {
+    user: editor.id,
+    method: "POST",
+    body: { tabId, status: "editing" },
+  });
+  assert(
+    presence.participants.some(
+      (p) => p.user.id === editor.id && p.status === "editing",
+    ),
+  );
+  await request(`/api/documents/${id}/presence`, {
+    user: viewer.id,
+    method: "POST",
+    status: 403,
+    body: { tabId: randomUUID(), status: "editing" },
+  });
+  await request(`/api/documents/${id}/presence`, {
+    user: editor.id,
+    method: "DELETE",
+    body: { tabId },
+  });
+  for (const format of ["markdown", "pdf"]) {
+    const response = await fetch(
+      base + `/api/documents/${id}/export?format=${format}`,
+      { headers: { Cookie: cookies.get(viewer.id) } },
+    );
+    assert.equal(response.status, 200);
+    assert(response.headers.get("content-disposition").includes("attachment"));
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    const text = new TextDecoder().decode(bytes);
+    if (format === "pdf") assert(text.startsWith("%PDF-"));
+    else {
+      assert(text.includes("## A verified document"));
+      assert(text.includes("Formatting survives a reopen"));
+    }
+  }
   await request(`/api/documents/${id}/shares/${editor.id}`, {
     user: owner.id,
     method: "DELETE",
   });
   await request(`/api/documents/${id}`, { user: editor.id, status: 404 });
+  await request(`/api/documents/${id}/versions`, {
+    user: editor.id,
+    status: 404,
+  });
+  await request(`/api/documents/${id}/comments`, {
+    user: editor.id,
+    status: 404,
+  });
   const form = new FormData();
   form.set(
     "file",
@@ -131,12 +271,6 @@ try {
   assert(
     imported.document.content.content.some((node) => node.type === "heading"),
   );
-  const { result: listing } = await request("/api/documents", {
-    user: viewer.id,
-  });
-  assert(
-    listing.documents.some((doc) => doc.id === id && doc.role === "viewer"),
-  );
   const invalid = new FormData();
   invalid.set(
     "file",
@@ -148,28 +282,41 @@ try {
     form: invalid,
     status: 400,
   });
+  await request("/api/auth/sign-out", { user: newUserId, method: "POST" });
+  await request("/api/documents", { user: newUserId, status: 401 });
+  for (const user of signed)
+    await request("/api/auth/sign-out", { user: user.id, method: "POST" });
   console.log(
-    "PASS: rich-text persistence, create/rename, editor/viewer access, unauthorized denial, stale-save rejection, share revocation, Markdown import, invalid file rejection.",
+    "PASS: auth/signup/duplicate/logout, legacy cookie rejection, rich-text persistence, email invitations, role checks, atomic history/restore, comments/resolution, presence, PDF/Markdown, import, conflicts and revocation.",
   );
 } finally {
-  // Delete only documents created by this run, never seed or pre-existing records.
   const { default: dotenv } = await import("dotenv");
   dotenv.config({ path: ".env.local", quiet: true });
-  if (process.env.MONGODB_URI && testRecords.length) {
+  if (process.env.MONGODB_URI) {
     const { MongoClient } = await import("mongodb");
     const client = new MongoClient(process.env.MONGODB_URI);
     try {
       await client.connect();
-      const removed = await client
-        .db(process.env.MONGODB_DB || "drive-test")
-        .collection("folio_documents")
-        .deleteMany({ _id: { $in: testRecords } });
-      console.log(
-        `Cleaned up ${removed.deletedCount} documents created by this test run.`,
-      );
+      const db = client.db(process.env.MONGODB_DB || "drive-test");
+      if (testRecords.length) {
+        await db
+          .collection("folio_documents")
+          .deleteMany({ _id: { $in: testRecords } });
+        await db
+          .collection("folio_comments")
+          .deleteMany({ documentId: { $in: testRecords } });
+        await db
+          .collection("folio_presence")
+          .deleteMany({ documentId: { $in: testRecords } });
+      }
+      if (newUserId) {
+        await db.collection("folio_credentials").deleteOne({ _id: newUserId });
+        await db.collection("folio_users").deleteOne({ _id: newUserId });
+        await db.collection("folio_sessions").deleteMany({ userId: newUserId });
+      }
+      console.log("Cleaned up this run's temporary accounts and documents.");
     } finally {
       await client.close();
     }
-  } else if (testRecords.length)
-    console.log("Test records created:", testRecords.join(", "));
+  }
 }

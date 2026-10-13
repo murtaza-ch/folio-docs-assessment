@@ -8,12 +8,16 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "db:setup": "tsx scripts/setup-db.ts",
-    "test:flows": "node scripts/check-flows.mjs"
+    "db:setup": "tsx scripts/setup-db.ts && tsx scripts/setup-auth.ts",
+    "test:flows": "node scripts/check-flows.mjs",
+    "auth:setup": "tsx scripts/setup-auth.ts",
+    "test:history": "tsx scripts/check-history.ts",
+    "db:migrate": "tsx scripts/migrate-db.ts"
   },
   "dependencies": {
     "@chakra-ui/react": "3.37.0",
     "@emotion/react": "11.14.0",
+    "@pdf-lib/fontkit": "1.1.1",
     "@tiptap/extension-placeholder": "3.32.0",
     "@tiptap/markdown": "3.32.0",
     "@tiptap/pm": "3.32.0",
@@ -22,6 +26,7 @@
     "lucide-react": "1.56.0",
     "mongodb": "7.7.0",
     "next": "16.4.0",
+    "pdf-lib": "1.17.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "zod": "4.6.7"

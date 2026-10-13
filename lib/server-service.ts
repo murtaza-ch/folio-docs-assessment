@@ -116,9 +116,21 @@ export function documentService(repo: DocumentRepository) {
     },
     async shares(id: string, userId: string) {
       await requireDocument(id, userId);
+      const shares = await repo.listShares(id);
+      // Only reviewer profiles and existing recipients are suggested. A new
+      // account is invited by exact email, without exposing the user directory.
+      const demoIds = new Set([
+        "11111111-1111-4111-8111-111111111111",
+        "22222222-2222-4222-8222-222222222222",
+        "33333333-3333-4333-8333-333333333333",
+      ]);
       return {
-        shares: await repo.listShares(id),
-        users: await repo.listUsers(),
+        shares,
+        users: (await repo.listUsers()).filter(
+          (user) =>
+            demoIds.has(user.id) ||
+            shares.some((share) => share.userId === user.id),
+        ),
       };
     },
     async share(

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "@chakra-ui/react";
+import { Button, Input } from "@chakra-ui/react";
 import { LockKeyhole, Trash2 } from "lucide-react";
 import type { Document, DocumentShare, ShareRole, User } from "@/lib/types";
 import { Modal } from "./modal";
@@ -18,6 +18,7 @@ export function ShareDialog({
   const [shares, setShares] = useState<DocumentShare[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [selected, setSelected] = useState("");
+  const [email, setEmail] = useState("");
   const [role, setRole] = useState<ShareRole>("viewer");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -35,7 +36,11 @@ export function ShareDialog({
       .catch((cause) => setError(cause.message))
       .finally(() => setLoading(false));
   }, [document.id]); // eslint-disable-line react-hooks/exhaustive-deps
-  async function update(userId: string, nextRole?: ShareRole) {
+  async function update(
+    userId: string,
+    nextRole?: ShareRole,
+    inviteEmail?: string,
+  ) {
     setBusy(true);
     setError("");
     try {
@@ -46,7 +51,10 @@ export function ShareDialog({
           ...(nextRole
             ? {
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ userId, role: nextRole }),
+                body: JSON.stringify({
+                  ...(inviteEmail ? { email: inviteEmail } : { userId }),
+                  role: nextRole,
+                }),
               }
             : {}),
         },
@@ -57,6 +65,7 @@ export function ShareDialog({
       }
       await load();
       setSelected("");
+      setEmail("");
       onChanged();
     } catch (cause) {
       setError(
@@ -89,7 +98,10 @@ export function ShareDialog({
         <select
           id="share-user"
           value={selected}
-          onChange={(event) => setSelected(event.target.value)}
+          onChange={(event) => {
+            setSelected(event.target.value);
+            setEmail("");
+          }}
           disabled={loading || busy}
         >
           <option value="">Choose a person</option>
@@ -112,10 +124,24 @@ export function ShareDialog({
           <option value="editor">Can edit</option>
         </select>
       </div>
+      <label className="share-email-label" htmlFor="share-email">
+        Or invite a registered account by email
+      </label>
+      <Input
+        id="share-email"
+        type="email"
+        placeholder="teammate@example.com"
+        value={email}
+        onChange={(event) => {
+          setEmail(event.target.value);
+          setSelected("");
+        }}
+        disabled={busy}
+      />
       <Button
         className="primary-button invite-button"
-        onClick={() => update(selected, role)}
-        disabled={!selected || busy}
+        onClick={() => update(selected, role, email.trim() || undefined)}
+        disabled={(!selected && !email.trim()) || busy}
       >
         {busy ? "Updating access..." : "Invite person"}
       </Button>
@@ -176,7 +202,10 @@ export function ShareDialog({
         <LockKeyhole size={16} />
         <div>
           <strong>Only invited people have access</strong>
-          <p>Viewers can read. Editors can write. You manage sharing.</p>
+          <p>
+            Viewers can read and comment. Editors can write and restore
+            versions. You manage sharing.
+          </p>
         </div>
       </div>
       <div className="modal-actions">

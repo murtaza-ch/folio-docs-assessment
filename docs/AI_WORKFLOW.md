@@ -1,31 +1,31 @@
 # AI workflow
 
-## Tools used
+## Contributions
 
-Codex assisted with planning, code generation and documentation. Parallel agents worked on the workspace, the server and the rich text editor. The project uses Next.js and Chakra UI because the user requested them. AI initially proposed Postgres. The user chose their existing MongoDB cluster, and the implementation changed to MongoDB.
+Codex assisted with planning, implementation, tests and documentation. The user authorized parallel agents and requested Next.js with Chakra UI. Agents split work across the workspace, server, editor, authentication, collaboration and exports. Shared TypeScript contracts connected the parts, and the parent agent reviewed integration behavior.
 
-AI-generated work includes the initial application code, validation logic, rich text toolbar, repository layer, test cases and these draft notes. Agents read official framework documentation where APIs needed verification. The assistant inspected shared files to keep types and component contracts aligned.
+AI initially proposed PostgreSQL. The user chose an existing MongoDB cluster, so persistence moved to the official MongoDB driver. The first scope used selectable demo identities. The user later requested email/password authentication and all stretch features, so those identities became authenticated demo accounts and the selection endpoint was disabled.
 
-## Where AI saved time
+AI-generated work includes interface components, validation, the repository and access services, password/session handling, comments, history, presence, export serializers, test cases and these notes. Agents checked installed Next.js guidance and official Node, MongoDB and Tiptap documentation when APIs needed verification.
 
-Parallel work let the server, UI and editor progress together. Shared TypeScript interfaces defined roles, document versions and content before the components connected. AI also produced an initial walkthrough outline and setup instructions that can be checked against the final implementation.
+## Decisions corrected during review
 
-## Output changed during implementation
+Tiptap StarterKit already included underline, so a duplicate extension was removed. Deferred rendering avoids Next.js hydration issues. External content replacement suppresses update events, and identical state echoes do not reset the editor's selection or undo history. All six heading levels remain supported because imported Markdown can contain them.
 
-The editor uses Tiptap StarterKit's built-in underline extension after checking the v3 documentation, rather than adding a second extension with the same name. It sets `immediatelyRender: false` for Next.js. External content replacement uses `emitUpdate: false` to avoid triggering a save loop.
+Save authorization and the expected version are included in the atomic MongoDB update. An earlier permission read alone would leave a race with revoked editing access. Conflict recovery preserves the local draft and offers a copy rather than automatically replacing newer content.
 
-The component also avoids replacing the editor document when React passes back the same locally edited JSON. Resetting content on each parent state change would disturb selection and undo history. The implementation compares content before applying external updates.
+History was added to that same atomic update. A simple 50-snapshot count could exceed MongoDB's document-size limit with large content, so snapshots also have a 6,000,000-byte BSON budget. Restoring creates a new version through the same guarded save path.
 
-MongoDB saves use an expected version in an atomic update. Blind last-write-wins saving was not chosen because two tabs could overwrite one another without a visible error. Conflict detection remains limited to preventing overwrite; it does not merge text.
+Password hashes live separately from public profiles, preventing profile responses from accidentally returning credential fields. Real sessions store only opaque-token digests, reject expired sessions before TTL cleanup, and revoke tokens on logout. The old user-ID cookie no longer authenticates requests. New accounts keep separate UUIDs and do not inherit sample-document access.
 
-The editor originally supported only two heading levels. It now allows all six because the Markdown importer accepts headings through level six. Keeping a smaller editor schema would discard valid formatting when an imported document opened.
+Presence uses MongoDB heartbeats and polling rather than a CRDT. Hidden tabs pause, multiple tabs aggregate by user, and expired or revoked participants are excluded. Remote saved content refreshes only clean editors. Comments enforce author/editor/owner rules independently of the interface.
 
-## Verification
+Exports generate actual downloadable Markdown and PDF files. Bundled Noto Sans fonts avoid depending on remote font services. Unsupported PDF glyphs return an explicit error and preserve Markdown as a fallback. Markdown underline uses HTML tags, and the import documentation states that raw HTML remains literal text.
 
-Generated code still needs the same checks as hand-written code. Relevant checks include TypeScript, the production build, service tests for permissions and concurrency, and browser exercises for create, edit, reload, import and cross-user sharing. The final record of checks that actually ran belongs in [SUBMISSION.md](../SUBMISSION.md).
+## Verification and limits
 
-TypeScript, the production build, and 28 automated tests passed. A Node API check passed against both localhost and the Vercel deployment, including actual MongoDB persistence and stale-save rejection. Chrome checks covered creation, rename, formatting after reload, view-only sharing, Markdown import, and saving a conflicting draft as a copy.
+Generated code receives TypeScript, unit, production-build, HTTP integration and browser checks. Unit suites cover permission failures, competing saves, authentication, session expiry, rate limits, comment ownership, restore behavior, presence expiry and export content. Dedicated integration scripts exercise actual MongoDB persistence and the bounded-history pipeline, then clean up their test records.
 
-Browser review caught an initially empty word count and a busy state that briefly showed owner documents as view-only. Both were corrected. Inline formatting also introduced extra spaces into excerpts and caused inconsistent word counts; a shared text traversal now keeps marked text together. Malformed child nodes could throw before validation, so the validator now checks their shape first.
+Earlier browser review found an empty word count, an intermediate permission-label error and spaces inserted between inline formatting fragments. Shared text extraction and loading-state handling corrected them. Malformed rich text children now fail validation instead of causing an exception.
 
-The first dependency installation failed because the existing npm cache contained root-owned files. A temporary npm cache allowed installation without changing the global cache permissions. The initial browser preview opened before the CSS file existed; after the stylesheet was written, the page rendered successfully.
+The final expanded-release checks are being recorded separately in [SUBMISSION.md](../SUBMISSION.md). A successful unit test does not prove a browser interaction or deployment worked; those checks must be observed directly. The user will record the walkthrough, and a Drive submission folder still needs to be delivered.

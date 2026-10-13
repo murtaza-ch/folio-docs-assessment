@@ -200,5 +200,19 @@ export const updateDocumentSchema = z
   );
 export const sessionSchema = z.object({ userId: idSchema }).strict();
 export const shareSchema = z
-  .object({ userId: idSchema, role: z.enum(["editor", "viewer"]) })
-  .strict();
+  .object({
+    userId: idSchema.optional(),
+    email: z
+      .string()
+      .trim()
+      .max(254)
+      .email()
+      .transform((value) => value.toLowerCase())
+      .optional(),
+    role: z.enum(["editor", "viewer"]),
+  })
+  .strict()
+  .refine(
+    (value) => Boolean(value.userId) !== Boolean(value.email),
+    "Choose a person or supply their email.",
+  );

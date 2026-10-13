@@ -20,6 +20,9 @@ async function setup() {
     await users.createIndex({ email: 1 }, { unique: true });
     await documents.createIndex({ ownerId: 1, updatedAt: -1 });
     await documents.createIndex({ "shares.userId": 1, updatedAt: -1 });
+    await db
+      .collection("folio_comments")
+      .createIndex({ documentId: 1, createdAt: -1 });
     for (const user of SEED_USERS)
       await users.updateOne(
         { _id: user.id },

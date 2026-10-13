@@ -4,58 +4,60 @@
 
 - Source repository: https://github.com/murtaza-ch/folio-docs-assessment
 - Live product: https://folio-docs-assessment.vercel.app
-- Walkthrough video: pending your recording. Add the URL here and in `walkthrough-url.txt` before submission.
-- Google Drive folder: pending upload of this source package and the walkthrough URL.
-- Demo accounts: Alice Morgan, Ben Carter and Clara Park. Choose an account in the bottom-left switcher. No password is required.
+- Walkthrough video: pending the user's recording. Add the URL here and in `walkthrough-url.txt` before submission.
+- Google Drive folder: pending upload of the source package and walkthrough URL.
+- Demo login emails: `alice@folio.demo`, `ben@folio.demo`, `clara@folio.demo`.
+- Public demo password for all three accounts: `FolioDemo!2026`.
 
-The private GitHub repository is connected to Vercel with `main` as the production branch.
-
-The live production URL was checked without Vercel login. Reviewers can use seeded documents and create their own sample documents.
+The private GitHub repository is connected to Vercel with `main` as the production branch. The reviewer can sign in using the public demo credentials or create a separate account. Newly registered accounts receive no existing-document access until an owner shares with their registered email.
 
 ## Included files
 
-- `app/`: Next.js page, layout, stylesheet and document/session/import/sharing routes.
-- `components/`: Chakra provider, workspace, document list, Tiptap editor and import/sharing dialogs.
-- `lib/`: shared types, validation, MongoDB repository, access service, importer and text extraction.
-- `db/seed.ts`: sample users and documents.
-- `scripts/setup-db.ts`: additive, repeatable database setup.
-- `scripts/check-flows.mjs`: HTTP integration check with cleanup of its own records.
-- `tests/backend.test.ts`: 28 automated permission, concurrency, validation and import tests.
-- `examples/`: text and Markdown files for the demo.
-- `README.md`: setup, run, verification and deployment instructions.
-- `docs/ARCHITECTURE.md`: storage, access, concurrency and scope decisions.
-- `docs/AI_WORKFLOW.md`: AI contributions, changes and verification.
-- `docs/WALKTHROUGH.md`: timed script for your recording.
-- `live-url.txt`, `walkthrough-url.txt` and this submission inventory.
-- Package manifest, lockfile, TypeScript/Next.js configuration and `.env.example`.
-- `screenshots/`: browser captures, when present in the packaged folder.
+- `app/`: workspace, auth and document APIs, comments, versions, presence and export routes; bundled PDF fonts and their license.
+- `components/`: Chakra provider, auth screen, document workspace/editor, sharing/import dialogs, comments/history, presence and export controls.
+- `lib/`: types, validation, MongoDB repositories, access and authentication services, import/export logic and collaboration services.
+- `db/seed.ts`: sample profiles and documents.
+- `scripts/setup-db.ts`, `scripts/setup-auth.ts`: additive setup with preserved documents and existing passwords.
+- `scripts/check-flows.mjs`, `scripts/check-history.ts`: HTTP integration and actual MongoDB history/concurrency checks with cleanup.
+- `tests/`: backend, authentication, collaboration, presence and export suites.
+- `examples/`: text and Markdown import samples.
+- `README.md`, architecture/AI/walkthrough notes, this inventory, and live/walkthrough URL files.
+- Package manifest, lockfile, configuration, `.env.example` and screenshots when included in the source package.
 
-The source package excludes credentials, `.env.local`, `.vercel`, `node_modules`, `.next`, Git metadata and generated caches.
+The package excludes credentials, `.env.local`, `.vercel`, `node_modules`, `.next`, Git metadata and generated caches.
 
 ## Working behavior
 
-Create and rename documents; edit bold, italic, underline, headings and lists; autosave and reopen persisted rich text; import UTF-8 `.txt` and `.md` files up to 1 MiB; share as editor or viewer; distinguish owned and shared documents; change or revoke access. API permissions and expected-version checks protect reads and writes. Stale saves retain the local draft and offer reload or save-as-copy recovery.
+Email/password signup and sign-in; seven-day database-backed sessions; logout revocation; rich text create/rename/autosave/reopen; UTF-8 `.txt` and `.md` import up to 1 MiB; owner/editor/viewer access, email invitations and revocation; polling viewing/editing presence; document comments with edit/delete/resolve rules; bounded atomic version history with preview and guarded restore; downloadable Markdown and generated PDF exports.
 
-## Verification
+Expected-version writes prevent silent overwrites. Failed or conflicting saves retain the draft and offer reload or save-as-copy recovery. History stores at most 50 previous snapshots within 6,000,000 bytes of snapshot BSON. PDF uses bundled Noto Sans fonts, reports unsupported glyphs with HTTP 422 and offers Markdown as the text-preserving alternative.
 
-| Check                                     | Result                                                        |
-| ----------------------------------------- | ------------------------------------------------------------- |
-| TypeScript                                | Passed                                                        |
-| Automated tests                           | 28 passed                                                     |
-| Production build                          | Passed locally and on Vercel                                  |
-| Actual MongoDB API flows                  | Passed locally and on the live Vercel URL                     |
-| Create, rename, bold formatting           | Passed Chrome checks                                          |
-| Save, refresh, reopen with formatting     | Passed Chrome checks                                          |
-| Markdown import with headings/lists/marks | Passed Chrome upload checks                                   |
-| Text import and rejected invalid files    | Passed automated tests                                        |
-| Owner/editor/viewer and revocation        | Passed API checks; viewer mode also checked in Chrome         |
-| Conflict detection and save-as-copy       | Passed Chrome checks                                          |
-| Public reviewer access                    | Live homepage and session API returned HTTP 200 without login |
+Imports persist parsed content in MongoDB. Uploaded binaries are not retained, and no external cloud file store or Drive import is configured.
 
-## Incomplete and intentionally excluded
+## Verification record
 
-The walkthrough recording and Drive upload remain delivery steps. The user chose to record the walkthrough. Do not submit placeholder video links.
+The expanded release passed the checks below. Live verification follows the production deployment.
 
-Production authentication, simultaneous text merging, `.docx` import, comments, version history and export are outside this timeboxed build. Demo identities are selectable and do not verify who a visitor really is. Markdown import supports a documented subset of headings, paragraphs, lists, quotes, code and inline marks; raw HTML is treated as text.
+| Check                                                 | Final expanded-release result           |
+| ----------------------------------------------------- | --------------------------------------- |
+| TypeScript                                            | Passed                                  |
+| All automated suites                                  | 80 tests passed across five suites      |
+| Production build                                      | Passed                                  |
+| Auth/signup/logout and permission HTTP flows          | Passed on localhost after migration     |
+| Actual MongoDB history byte bound and competing saves | Passed on source; target rerun pending  |
+| Comments, restore, presence and export HTTP flows     | Passed on localhost after migration     |
+| Browser create/edit/reopen/import/sharing             | Core review passed; sharing rechecked   |
+| Browser authentication and stretch-feature controls   | Sign-in, comments, inline restore and both downloads passed; presence API passed |
+| Public reviewer access to final deployment            | Pending final deployment check          |
 
-With another 2-4 hours, add verified sign-in, broader automated browser coverage for interrupted saves and permission changes, and a downloadable local draft for offline/conflict recovery.
+Commands are `npm run typecheck`, `npm test`, `npm run build`, `npm run test:flows` and `npm run test:history`. `db:setup` runs document and authentication setup; `auth:setup` runs only the latter.
+
+The app now uses the free cluster in the Murtaza Assessment Atlas project, retaining the database name `drive-test`. Migration copied and verified five users, nine documents, five credentials and two comments. The source database remains intact. Sessions and presence were excluded, so users sign in again after the switch.
+
+## Limits and remaining delivery
+
+The user will record the walkthrough. Video and Google Drive delivery remain incomplete; no placeholder video link should be submitted.
+
+Presence polls every 3 seconds, heartbeats every 6 seconds and expires inactive tabs after 20 seconds. It does not provide CRDT text merging or live cursor positions. Comments attach to a document, not text selections. History is bounded rather than a permanent audit archive. Markdown import supports a subset and treats raw HTML literally, including `<u>` tags used by exported underline. PDF is limited to 200 pages and the bundled font's glyph set.
+
+Account recovery, email verification, `.docx` import, Drive import and folders are not implemented. Public demo accounts are shared assessment accounts. The next work would add password recovery, broader browser coverage for interrupted saves and permission changes, and downloadable draft recovery.

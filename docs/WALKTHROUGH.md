@@ -2,30 +2,40 @@
 
 Live URL: https://folio-docs-assessment.vercel.app
 
-Target length is 3-5 minutes. Record the live application with readable text and keep the browser address visible at the start. Upload the finished recording to Loom or YouTube, then put the shareable URL in `SUBMISSION.md` and `walkthrough-url.txt`.
+Record 3-5 minutes with readable text and the browser address visible at the start. The user will make this recording. Upload it to Loom or YouTube and add the shareable URL to `SUBMISSION.md` and `walkthrough-url.txt`. Do not submit a placeholder URL.
 
-## 0:00-0:30: Context
+## 0:00-0:30: Sign in and context
 
-Introduce Folio as a document workspace built with Next.js, React, Chakra UI, Tiptap and MongoDB. Explain that demo identities let a reviewer exercise ownership and sharing without account setup. Say explicitly that identity selection is for the assessment and is not verified sign-in.
+Introduce Folio as a Next.js, React, Chakra UI, Tiptap and MongoDB workspace. Sign in as `alice@folio.demo` with the public demo password `FolioDemo!2026`. Ben and Clara use `ben@folio.demo` and `clara@folio.demo` with the same password. Explain that these are shared reviewer accounts with real password/session authentication. New users can sign up for a separate empty workspace.
 
-## 0:30-1:40: Create, format and reopen
+## 0:30-1:20: Create, format and reopen
 
-Create a document and rename it. Type a short paragraph, apply bold, italic and underline, then add a heading and a list. Point to the save status. Wait for it to show saved, reload, and reopen the document to demonstrate durable formatting.
+Create and rename a document. Type a paragraph, apply bold, italic and underline, then add a heading and list. Wait for the saved status. Reload and reopen it to show that rich text persists.
 
-## 1:40-2:10: Import
+## 1:20-1:45: Import and export
 
-Import a small `.md` or `.txt` file. Open the result and show that it can be edited. Mention the supported file types and 1 MiB limit.
+Import a small `.md` file from `examples/` and open the editable result. Mention `.txt`, `.md` and the 1 MiB limit. Download Markdown and PDF. Explain that PDF uses bundled Noto fonts and reports unsupported glyphs instead of losing text; Markdown is the fallback.
 
-## 2:10-3:10: Share across users
+## 1:45-2:45: Share and presence
 
-Share the document with another seeded user as a viewer. Switch to that user and open it from shared documents. Show that the toolbar is unavailable. Return to the owner, change access to editor, switch users again, and make an edit. Return to the owner and reopen the updated document.
+Share with Ben as an editor and Clara as a viewer. Use a separate browser profile signed in as Ben to open the same document. Show the viewing/editing activity indicator and make a saved edit. Explain that activity polls every 3 seconds; this is saved-version synchronization, not simultaneous text merging.
 
-## 3:10-3:45: Reliability and decisions
+Sign in as Clara in another profile if time permits. Show view-only document access. Alternatively, use a prepared viewer tab. Return to Alice and demonstrate changing or revoking access.
 
-Explain that documents use JSON content in MongoDB and version checks prevent silent overwrites. The conflict flow passed browser verification. Show an old-tab save and its recovery message if time permits. Explain that this is conflict detection rather than real-time simultaneous editing.
+## 2:45-3:35: Comments and history
 
-## 3:45-4:30: Scope and AI
+Open Comments & history. Post a document comment and resolve it. Explain that comments belong to the document rather than a selected text range.
 
-Show the README, architecture note and AI workflow note. Explain where AI helped with parallel implementation and which generated choices were corrected. Mention actual verification results from `SUBMISSION.md`. End with what remains and what you would address in the next 2-4 hours.
+Select History, preview an earlier saved version and restore it. Show the newly incremented version. Mention that history is capped at 50 previous snapshots and a 6,000,000-byte budget, so large documents retain fewer revisions.
 
-Only demonstrate flows that have passed verification. If something remains incomplete, name it directly in the recording and submission note.
+## 3:35-4:15: Reliability
+
+Use a prepared old tab to show a stale-save conflict and recovery if time permits. Point out that unsaved drafts are retained and can be saved as a copy. Presence does not merge keystrokes, and restore also protects against a newer concurrent save.
+
+## 4:15-4:45: AI, verification and delivery
+
+Briefly show the README, architecture note and AI workflow. Explain that agents worked in parallel and that review corrected save races, history size limits, editor resets and PDF character handling. Report only final checks recorded in `SUBMISSION.md`.
+
+End with the remaining limits, including account recovery, full live text merging and `.docx` import. The recording URL and Drive folder are submission delivery steps.
+
+Only demonstrate flows that have passed verification. Prepare the accounts and browser profiles beforehand so the recording stays within five minutes.

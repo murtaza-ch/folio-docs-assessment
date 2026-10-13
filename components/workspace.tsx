@@ -6,7 +6,8 @@ import {
   ArrowLeft,
   ArrowUpRight,
   Check,
-  ChevronDown,
+  LogOut,
+  MessageSquare,
   Cloud,
   FileText,
   FolderOpen,
@@ -30,21 +31,39 @@ import { DocumentEditor } from "./document-editor";
 import { DocumentList, relativeDate } from "./document-list";
 import { ImportDialog } from "./import-dialog";
 import { ShareDialog } from "./share-dialog";
+import { AuthScreen } from "./auth-screen";
+import { DocumentActivity } from "./document-activity";
+import { DocumentPresence } from "./document-presence";
+import { ExportMenu } from "./export-menu";
 
 type SaveState = "saved" | "unsaved" | "saving" | "error" | "conflict";
 type Draft = { title: string; content: RichTextDocument };
 
+class RequestError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+  ) {
+    super(message);
+  }
+}
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, options);
   const result = await response.json();
   if (!response.ok)
-    throw new Error(result.error || "Something went wrong. Please try again.");
+    throw new RequestError(
+      result.error || "Something went wrong. Please try again.",
+      response.status,
+    );
   return result;
 }
 
 export function Workspace() {
   const [user, setUser] = useState<User | null>(null);
-  const [users, setUsers] = useState<User[]>([]);
+  const [activityOpen, setActivityOpen] = useState(false);
+  const [activelyEditing, setActivelyEditing] = useState(false);
+  const [remoteNotice, setRemoteNotice] = useState(false);
+  const sessionUserId = useRef<string | null>(null);
   const [documents, setDocuments] = useState<DocumentSummary[]>([]);
   const [document, setDocument] = useState<Document | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -77,6 +96,8 @@ export function Workspace() {
     draftRef.current = nextDraft;
     dirtyRef.current = false;
     conflictRef.current = null;
+    setActivelyEditing(false);
+    setRemoteNotice(false);
     setDocument(next);
     setDraft(nextDraft);
     setSaveState("saved");
@@ -113,8 +134,10 @@ export function Workspace() {
             );
             return false;
           }
-          if (!response.ok)
+          if (!response.ok) {
+            if (response.status === 401) setUser(null);
             throw new Error(result.error || "Your changes could not be saved.");
+          }
           documentRef.current = result.document;
           setDocument(result.document);
           updateSummary(result.document);
@@ -145,12 +168,11 @@ export function Workspace() {
     let active = true;
     (async () => {
       try {
-        const session = await request<{ user: User; users: User[] }>(
-          "/api/session",
-        );
+        const session = await request<{ user: User | null }>("/api/session");
         if (!active) return;
+        if (!session.user) return;
+        sessionUserId.current = session.user.id;
         setUser(session.user);
-        setUsers(session.users);
         const data = await request<{ documents: DocumentSummary[] }>(
           "/api/documents",
         );
@@ -212,6 +234,7 @@ export function Workspace() {
     draftRef.current = next;
     dirtyRef.current = true;
     revisionRef.current += 1;
+    setActivelyEditing(true);
     setDraft(next);
     if (!conflictRef.current) setSaveState("unsaved");
   }
@@ -259,34 +282,40 @@ export function Workspace() {
     }
   }
 
-  async function changeUser(userId: string) {
-    if (busy || userId === user?.id) return;
-    setBusy(true);
-    try {
-      if (!(await flush())) return;
-      const session = await request<{ user: User; users: User[] }>(
-        "/api/session",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId }),
-        },
+  async function authenticated(nextUser: User) {
+    // An expired session must not silently replace a different user's draft.
+    if (
+      dirtyRef.current &&
+      sessionUserId.current &&
+      sessionUserId.current !== nextUser.id
+    ) {
+      await request("/api/auth/sign-out", { method: "POST" });
+      throw new Error(
+        "Your previous account has unsaved writing. Sign back in to that account to keep it.",
       );
-      setUser(session.user);
-      setUsers(session.users);
-      setFilter("all");
-      setSearch("");
-      setDocuments([]);
-      setSaveState("saved");
-      documentRef.current = null;
-      draftRef.current = null;
-      setDocument(null);
-      setDraft(null);
-      setError("");
+    }
+    const resumeDraft =
+      dirtyRef.current && sessionUserId.current === nextUser.id;
+    sessionUserId.current = nextUser.id;
+    setUser(nextUser);
+    setLoading(true);
+    setError("");
+    try {
       const data = await request<{ documents: DocumentSummary[] }>(
         "/api/documents",
       );
       setDocuments(data.documents);
+      if (resumeDraft) {
+        await flush();
+        return;
+      }
+      documentRef.current = null;
+      draftRef.current = null;
+      setDocument(null);
+      setDraft(null);
+      setFilter("all");
+      setSearch("");
+      setSaveState("saved");
       if (data.documents[0])
         openDocument(
           (
@@ -297,8 +326,87 @@ export function Workspace() {
         );
     } catch (cause) {
       setError(
-        cause instanceof Error ? cause.message : "Could not switch accounts.",
+        cause instanceof Error
+          ? cause.message
+          : "Could not load your documents.",
       );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function signOut() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      if (!(await flush())) return;
+      await request("/api/auth/sign-out", { method: "POST" });
+      setUser(null);
+      setDocuments([]);
+      setDocument(null);
+      setDraft(null);
+      documentRef.current = null;
+      draftRef.current = null;
+      sessionUserId.current = null;
+      setActivityOpen(false);
+      setShareOpen(false);
+      setImportOpen(false);
+      setActivelyEditing(false);
+      setRemoteNotice(false);
+      setError("");
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Could not sign out. Please try again.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!activelyEditing) return;
+    const timer = setTimeout(() => setActivelyEditing(false), 5000);
+    return () => clearTimeout(timer);
+  }, [draft, activelyEditing]);
+
+  const remoteUpdate = useCallback(
+    async (version: number) => {
+      const current = documentRef.current;
+      if (!current || current.version === version || busy) return;
+      if (dirtyRef.current || savePromise.current || conflictRef.current) {
+        setRemoteNotice(true);
+        return;
+      }
+      try {
+        const data = await request<{ document: Document }>(
+          `/api/documents/${current.id}`,
+        );
+        // Check again after the request so typing or navigation cannot be overwritten.
+        if (
+          documentRef.current?.id !== current.id ||
+          dirtyRef.current ||
+          savePromise.current
+        )
+          return;
+        if (data.document.version > documentRef.current.version) {
+          openDocument(data.document);
+          updateSummary(data.document);
+        }
+      } catch (cause) {
+        if (cause instanceof RequestError && cause.status === 401)
+          setUser(null);
+      }
+    },
+    [busy, openDocument, updateSummary],
+  );
+
+  async function showActivity() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      if (await flush()) setActivityOpen(true);
     } finally {
       setBusy(false);
     }
@@ -362,6 +470,13 @@ export function Workspace() {
   const ownedCount = documents.filter((item) => item.role === "owner").length;
   const wordCount = draft ? documentWordCount(draft.content) : 0;
 
+  if (!user && loading)
+    return (
+      <main className="session-loading" role="status">
+        Opening your workspace...
+      </main>
+    );
+  if (!user) return <AuthScreen onAuthenticated={authenticated} />;
   return (
     <Flex className={`workspace ${document ? "document-open" : ""}`}>
       <Box as="aside" className="sidebar">
@@ -440,22 +555,17 @@ export function Workspace() {
             </span>
             <div>
               <strong>{user?.name || "Opening workspace"}</strong>
-              <span>Demo account</span>
+              <span>{user?.email}</span>
             </div>
-            <ChevronDown size={14} />
-            <select
-              aria-label="Switch demo account"
-              value={user?.id || ""}
-              onChange={(event) => changeUser(event.target.value)}
+            <button
+              className="account-logout"
+              aria-label="Sign out"
+              title="Sign out"
               disabled={busy || loading}
+              onClick={signOut}
             >
-              {!user && <option value="">Loading account</option>}
-              {users.map((person) => (
-                <option key={person.id} value={person.id}>
-                  {person.name}
-                </option>
-              ))}
-            </select>
+              <LogOut size={16} />
+            </button>
           </div>
         </div>
       </Box>
@@ -495,10 +605,21 @@ export function Workspace() {
             <option value="owned">Owned by me</option>
             <option value="shared">Shared with me</option>
           </select>
-          <span className="header-private">
-            <LockKeyhole size={13} />
-            Private by default
-          </span>
+          <div className="header-session">
+            <span className="header-private">
+              <LockKeyhole size={13} />
+              Private by default
+            </span>
+            <button
+              className="header-account-button"
+              aria-label="Sign out of your account"
+              onClick={signOut}
+              disabled={busy || loading}
+            >
+              <LogOut size={14} />
+              <span>Sign out</span>
+            </button>
+          </div>
         </Flex>
         {error && (
           <div
@@ -609,6 +730,21 @@ export function Workspace() {
                         "Not saved"
                       )}
                     </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="document-tool-button"
+                      onClick={showActivity}
+                      disabled={busy}
+                    >
+                      <MessageSquare size={14} />
+                      <span>Comments & history</span>
+                    </Button>
+                    <ExportMenu
+                      documentId={document.id}
+                      beforeExport={flush}
+                      disabled={busy}
+                    />
                     {document.role === "owner" && (
                       <Button
                         size="sm"
@@ -668,6 +804,20 @@ export function Workspace() {
                       </span>
                     </div>
                   </div>
+                  <div className="document-live-row">
+                    <DocumentPresence
+                      documentId={document.id}
+                      currentUserId={user?.id || ""}
+                      editing={activelyEditing && document.role !== "viewer"}
+                      enabled={!busy}
+                      onRemoteUpdate={remoteUpdate}
+                    />
+                    {remoteNotice && (
+                      <span className="remote-change-notice" role="status">
+                        A teammate saved a newer version. Your draft is safe.
+                      </span>
+                    )}
+                  </div>
                   <DocumentEditor
                     key={document.id}
                     content={draft.content}
@@ -721,6 +871,19 @@ export function Workspace() {
           </section>
         </div>
       </Box>
+      {activityOpen && document && user && (
+        <DocumentActivity
+          document={document}
+          user={user}
+          onClose={() => setActivityOpen(false)}
+          beforeRestore={flush}
+          onRestored={(next) => {
+            openDocument(next);
+            updateSummary(next);
+            setActivityOpen(false);
+          }}
+        />
+      )}
       {importOpen && (
         <ImportDialog
           onClose={() => setImportOpen(false)}

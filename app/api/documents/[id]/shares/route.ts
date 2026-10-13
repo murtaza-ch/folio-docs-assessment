@@ -1,3 +1,5 @@
+import { database, type StoredUser } from "../../../../../lib/server-db";
+import { AppError } from "../../../../../lib/server-service";
 import {
   currentUser,
   handle,
@@ -20,12 +22,30 @@ export async function POST(request: Request, context: Context) {
     sameOrigin(request);
     const id = idSchema.parse((await context.params).id);
     const user = await currentUser();
+    const doc = await service.getDocument(id, user.id);
+    if (doc.role !== "owner")
+      throw new AppError(403, "FORBIDDEN", "Only the owner can manage access.");
+    const value = await parseBody(request, shareSchema);
+    const recipient =
+      value.userId ??
+      (
+        await (
+          await database()
+        )
+          .collection<StoredUser>("folio_users")
+          .findOne({ email: value.email })
+      )?._id;
+    if (!recipient)
+      throw new AppError(
+        404,
+        "USER_NOT_FOUND",
+        "No account is registered with that email yet.",
+      );
     return json({
-      share: await service.share(
-        id,
-        user.id,
-        await parseBody(request, shareSchema),
-      ),
+      share: await service.share(id, user.id, {
+        userId: recipient,
+        role: value.role,
+      }),
     });
   });
 }

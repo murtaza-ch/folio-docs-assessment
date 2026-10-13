@@ -1,0 +1,342 @@
+.auth-page {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(360px, 44%) 1fr;
+  background: #fafaf8;
+}
+.auth-story {
+  background: #263449;
+  color: #f5f3ed;
+  padding: 48px 58px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+.auth-story .brand {
+  color: #f5f3ed;
+  width: max-content;
+}
+.auth-story .brand-mark span {
+  border-color: #cbd5de;
+  background: #263449;
+}
+.auth-story .brand-period {
+  color: #92a9ed;
+}
+.auth-story-copy {
+  margin: auto 0;
+  padding: 65px 0;
+}
+.auth-kicker {
+  font-size: 10px;
+  letter-spacing: 2.1px;
+  color: #b4c0d3;
+}
+.auth-story h1 {
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: clamp(36px, 3.6vw, 59px);
+  font-weight: 500;
+  line-height: 1.17;
+  letter-spacing: -1.8px;
+  margin: 25px 0;
+}
+.auth-story-copy > p {
+  font-size: 15px;
+  line-height: 1.8;
+  color: #c8cfdb;
+  max-width: 350px;
+}
+.auth-paper-note {
+  background: #ebe9e1;
+  color: #263449;
+  padding: 29px 28px;
+  width: 280px;
+  margin: 45px 0 0 35px;
+  transform: rotate(-3deg);
+  box-shadow: 0 15px 38px #0a142644;
+}
+.auth-paper-note blockquote {
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 23px;
+  line-height: 1.5;
+  margin: 17px 0 23px;
+}
+.auth-paper-note > span {
+  font-size: 9px;
+  letter-spacing: 1.6px;
+  color: #677080;
+}
+.auth-story-footer {
+  font-size: 11px;
+  color: #aeb8c8;
+}
+.auth-form-side {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 50px 40px;
+}
+.auth-form-card {
+  width: 100%;
+  max-width: 390px;
+}
+.auth-form-card > h2 {
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 31px;
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: -0.8px;
+  margin: 19px 0 12px;
+}
+.auth-form-card > p {
+  color: #7b8290;
+  font-size: 13px;
+  line-height: 1.7;
+  margin-bottom: 28px;
+}
+.auth-field {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: #43506a;
+  margin-bottom: 19px;
+}
+.auth-field input {
+  background: #fff;
+  border: 1px solid #dcdfe5;
+  border-radius: 5px;
+  height: 44px;
+  margin-top: 8px;
+  font-size: 13px;
+  padding: 0 13px;
+  color: #263449;
+  box-shadow: none;
+}
+.auth-field input:focus-visible {
+  outline: 2px solid #335cda44;
+  border-color: #335cda;
+}
+.auth-password {
+  position: relative;
+}
+.auth-password input {
+  padding-right: 43px;
+}
+.auth-password > button {
+  position: absolute;
+  right: 12px;
+  top: 21px;
+  background: none;
+  border: 0;
+  color: #7b8290;
+}
+.auth-submit {
+  width: 100%;
+  justify-content: space-between;
+  height: 44px !important;
+  margin-top: 5px;
+}
+.auth-mode {
+  text-align: center;
+  font-size: 12px !important;
+  margin: 22px 0 29px !important;
+}
+.auth-mode button {
+  background: none;
+  border: 0;
+  color: #335cda;
+  font-weight: 600;
+}
+.auth-review {
+  border-top: 1px solid #e6e7e9;
+  padding-top: 23px;
+}
+.auth-demo-buttons {
+  display: flex;
+  gap: 8px;
+  margin: 13px 0;
+}
+.auth-demo-buttons button {
+  flex: 1;
+  padding: 9px;
+  border: 1px solid #dcdfe5;
+  border-radius: 5px;
+  font-size: 12px;
+  background: #fff;
+  color: #43506a;
+}
+.auth-demo-buttons button:hover {
+  border-color: #335cda;
+  background: #edf2ff;
+}
+.auth-review p {
+  font-size: 11px;
+  line-height: 1.7;
+  color: #7b8290;
+}
+.auth-review code {
+  font-size: 11px;
+  color: #43506a;
+}
+.auth-assurance {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-size: 10px;
+  color: #89909b;
+  line-height: 1.5;
+  margin-top: 26px;
+}
+.auth-assurance svg {
+  flex: none;
+  margin-top: 1px;
+}
+.header-account-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #68738b;
+  background: none;
+  border: 0;
+  font-size: 11px;
+  padding: 7px;
+}
+.account-logout {
+  padding: 9px;
+  border: 0;
+  background: none;
+  color: #68738b;
+}
+.header-session {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sidebar .account > div {
+  min-width: 0;
+}
+.sidebar .account > div > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 130px;
+}
+.document-tools {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+}
+.document-tool-button {
+  font-size: 11px !important;
+  height: 30px !important;
+  padding: 0 9px !important;
+}
+.document-live-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 16px;
+}
+.session-loading {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #68738b;
+  font-size: 13px;
+}
+.session-loading .brand {
+  font-size: 28px;
+}
+@media (max-width: 1000px) {
+  .auth-story {
+    padding: 42px 35px;
+  }
+  .auth-paper-note {
+    margin-left: 0;
+    width: 245px;
+  }
+  .auth-form-side {
+    padding: 40px 30px;
+  }
+  .document-topbar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .document-actions {
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+  .document-live-row {
+    flex-wrap: wrap;
+  }
+}
+@media (max-width: 700px) {
+  .auth-page {
+    grid-template-columns: 1fr;
+  }
+  .auth-story {
+    min-height: 0;
+    padding: 28px 25px;
+  }
+  .auth-story-copy {
+    padding: 28px 0 0;
+  }
+  .auth-story h1 {
+    font-size: 31px;
+    letter-spacing: -0.8px;
+    margin: 14px 0 9px;
+  }
+  .auth-story-copy > p {
+    font-size: 12px;
+    max-width: 100%;
+  }
+  .auth-paper-note,
+  .auth-story-footer {
+    display: none;
+  }
+  .auth-kicker {
+    font-size: 9px;
+  }
+  .auth-form-side {
+    padding: 34px 25px 50px;
+  }
+  .auth-form-card > h2 {
+    font-size: 26px;
+  }
+  .header-session .header-private {
+    display: none;
+  }
+  .header-account-button > span {
+    display: none;
+  }
+  .document-tools {
+    gap: 4px;
+  }
+  .document-tool-button {
+    padding: 0 6px !important;
+  }
+  .document-tool-button span {
+    display: none;
+  }
+  .document-topbar .document-breadcrumb {
+    max-width: 150px;
+  }
+  .document-actions .save-status {
+    font-size: 9px;
+  }
+}
+
+.share-email-label {
+  display: block;
+  font-size: 11px;
+  color: #68738b;
+  margin: 16px 0 7px;
+}
+.remote-change-notice {
+  font-size: 10px;
+  color: #8c6b20;
+  max-width: 230px;
+  line-height: 1.5;
+}

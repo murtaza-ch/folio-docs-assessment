@@ -1,35 +1,22 @@
-import { cookies } from "next/headers";
 import { repository } from "../../../lib/server-db";
 import { AppError } from "../../../lib/server-service";
-import {
-  currentUser,
-  handle,
-  json,
-  parseBody,
-  sameOrigin,
-  SESSION_COOKIE,
-} from "../../../lib/server-http";
-import { sessionSchema } from "../../../lib/validation";
+import { currentSessionUser, handle, json } from "../../../lib/server-http";
+import { DEMO_PROFILE_IDS } from "../../../lib/server-auth";
 export const dynamic = "force-dynamic";
 export async function GET() {
-  return handle(async () =>
-    json({ user: await currentUser(), users: await repository.listUsers() }),
-  );
-}
-export async function POST(request: Request) {
   return handle(async () => {
-    sameOrigin(request);
-    const { userId } = await parseBody(request, sessionSchema);
-    const user = await repository.getUser(userId);
-    if (!user)
-      throw new AppError(404, "USER_NOT_FOUND", "Demo account not found.");
-    (await cookies()).set(SESSION_COOKIE, user.id, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: new URL(request.url).protocol === "https:",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7,
-    });
-    return json({ user, users: await repository.listUsers() });
+    const users = (
+      await Promise.all(DEMO_PROFILE_IDS.map((id) => repository.getUser(id)))
+    ).filter((user) => user !== null);
+    return json({ user: await currentSessionUser(), users });
+  });
+}
+export async function POST() {
+  return handle(async () => {
+    throw new AppError(
+      403,
+      "IMPERSONATION_DISABLED",
+      "Sign in with an email and password to select an account.",
+    );
   });
 }

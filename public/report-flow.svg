@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 150" role="img" aria-labelledby="title description">
+  <title id="title">Folio request flow</title>
+  <desc id="description">The browser sends an authenticated request to the Next.js API. The API validates access and atomically saves the document to MongoDB Atlas.</desc>
+  <defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8" fill="none" stroke="#6f6b62" stroke-width="1.5"/></marker></defs>
+  <rect x="1" y="1" width="778" height="148" rx="12" fill="#fbfaf7" stroke="#e4e1d9"/>
+  <g fill="#fff" stroke="#d3cfc4"><rect x="24" y="36" width="208" height="80" rx="8"/><rect x="286" y="36" width="208" height="80" rx="8"/><rect x="548" y="36" width="208" height="80" rx="8"/></g>
+  <g fill="#1b1a17" font-family="sans-serif" text-anchor="middle" font-size="18" font-weight="600"><text x="128" y="66">Browser</text><text x="390" y="66">Next.js API</text><text x="652" y="66">MongoDB Atlas</text></g>
+  <g fill="#6f6b62" font-family="sans-serif" text-anchor="middle" font-size="13"><text x="128" y="92">Draft and formatting</text><text x="390" y="92">Session · access · validation</text><text x="652" y="92">Atomic save and history</text></g>
+  <g stroke="#6f6b62" stroke-width="1.5" marker-end="url(#arrow)"><path d="M240 76H277"/><path d="M502 76H539"/></g>
+</svg>

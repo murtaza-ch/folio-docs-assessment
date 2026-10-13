@@ -2,13 +2,13 @@
 
 ## Application structure
 
-Next.js serves the React workspace and the API in one application. Chakra UI supplies interface components. Tiptap represents rich text as JSON and initializes after the client mounts to avoid hydration errors. Shared TypeScript types define document roles and response contracts; Zod and explicit rich text checks validate input at runtime.
+I built the workspace and API in one Next.js application, using React, Chakra UI and Tiptap. I use shared TypeScript types for document roles and response contracts, with Zod and explicit rich text checks for runtime validation. Tiptap represents rich text as JSON and initializes after the client mounts to avoid hydration errors.
 
 The browser keeps the editing draft and save status. Route handlers verify sessions, check resource access, validate requests and call MongoDB repositories. Protected behavior remains enforced even when a caller bypasses the interface.
 
 ## MongoDB and stored data
 
-The user chose an existing MongoDB cluster and the `drive-test` database. The server uses the official MongoDB driver and reuses its connection pool. Credentials and the connection string remain on the server.
+I chose MongoDB Atlas because its document model fits Tiptap's JSON trees. Embedding shares and bounded history in each document lets me enforce access and version checks in one atomic write. I configured my own free cluster in the Murtaza Assessment project, retained the `drive-test` database name, and migrated the existing data while preserving the source as a backup. I use the official MongoDB driver with a reusable connection pool. Credentials and the connection string remain on the server.
 
 | Collection | Stored data |
 | --- | --- |

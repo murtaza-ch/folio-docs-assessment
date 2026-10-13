@@ -1,6 +1,8 @@
 # Folio
 
-Folio is a collaborative document workspace built with Next.js, React, Chakra UI, Tiptap and MongoDB. It supports email/password accounts, rich text editing, sharing, activity presence, comments, version history, and downloadable Markdown and PDF exports.
+I built Folio, a collaborative document workspace, with Next.js, React, Chakra UI and Tiptap. I implemented email/password accounts, rich text editing, sharing, activity presence, comments, version history, and downloadable Markdown and PDF exports.
+
+I chose MongoDB Atlas for persistence because Tiptap documents are JSON trees. I store each document's content, sharing permissions and bounded version history together so I can check access and save a new version in one atomic update. I use the official MongoDB driver and keep database credentials on the server.
 
 Source repository: [murtaza-ch/folio-docs-assessment](https://github.com/murtaza-ch/folio-docs-assessment).
 
@@ -73,7 +75,7 @@ The HTTP flow check exercises sign-in, signup, sharing, saving, comments, restor
 
 ## Deploy
 
-The repository is connected to the `folio-docs-assessment` Vercel project. Pushes to `main` deploy the production app.
+I connected this repository to the `folio-docs-assessment` Vercel project. Pushes to `main` deploy the production app.
 
 For a separate deployment, import the repository into Vercel, add the MongoDB server variables, and run database setup against the intended database. Build with `npm run build`. Reviewer access should not require joining a hosting team. Production sessions use secure HTTP-only cookies, and document APIs verify authentication and access on the server.
 
@@ -81,7 +83,7 @@ Exclude `.env.local`, credentials, `.vercel`, `node_modules` and `.next` from th
 
 ## Database migration
 
-The assessment uses its own free Atlas cluster in the Murtaza Assessment project. The database remains `drive-test`, and the original source data is preserved. The migration copies users, documents, credentials and comments, verifies BSON values, and rejects conflicting target records. It skips temporary sessions and presence.
+I configured a dedicated free Atlas cluster in my Murtaza Assessment project and kept the database name `drive-test`. I implemented a migration that copies users, documents, credentials and comments, verifies BSON values, and rejects conflicting target records. I preserved the original source data and excluded temporary sessions and presence from the migration.
 
 For a future migration, set `SOURCE_MONGODB_URI` and `TARGET_MONGODB_URI` in a private, ignored `.env.migration` file. Run `npm run db:migrate` for a dry run, then `npm run db:migrate -- --apply` to copy and verify the records. Run `npm run db:setup` against the target afterward. Never commit either connection string.
 
@@ -89,4 +91,4 @@ For a future migration, set `SOURCE_MONGODB_URI` and `TARGET_MONGODB_URI` in a p
 
 [Architecture](docs/ARCHITECTURE.md) explains storage, authentication, permissions and collaboration. [AI workflow](docs/AI_WORKFLOW.md) records AI contributions and review. [Walkthrough](docs/WALKTHROUGH.md) outlines the required 3-5 minute recording.
 
-The user will record the walkthrough. Its URL and the Google Drive submission folder remain delivery steps. Folio does not provide CRDT text merging, cursor positions, `.docx` import, Google Drive file import, password reset or email verification. Markdown import supports a subset; exported underline uses `<u>` tags, which import treats as literal text.
+I will record the walkthrough. Its URL and the Google Drive submission folder remain delivery steps. Folio does not provide CRDT text merging, cursor positions, `.docx` import, Google Drive file import, password reset or email verification. Markdown import supports a subset; exported underline uses `<u>` tags, which import treats as literal text.

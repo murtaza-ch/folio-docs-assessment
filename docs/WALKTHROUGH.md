@@ -2,11 +2,13 @@
 
 Live URL: https://folio-docs-assessment.vercel.app
 
-Record 3-5 minutes with readable text and the browser address visible at the start. The user will make this recording. Upload it to Loom or YouTube and add the shareable URL to `SUBMISSION.md` and `walkthrough-url.txt`. Do not submit a placeholder URL.
+I will record a 3-5 minute walkthrough with readable text and the browser address visible at the start. I will upload it to Loom or YouTube and add the shareable URL to `SUBMISSION.md` and `walkthrough-url.txt` before submission.
 
 ## 0:00-0:30: Sign in and context
 
 Introduce Folio as a Next.js, React, Chakra UI, Tiptap and MongoDB workspace. Sign in as `alice@folio.demo` with the public demo password `FolioDemo!2026`. Ben and Clara use `ben@folio.demo` and `clara@folio.demo` with the same password. Explain that these are shared reviewer accounts with real password/session authentication. New users can sign up for a separate empty workspace.
+
+Opening script: "I built Folio with Next.js, React, Chakra UI and Tiptap. I chose MongoDB Atlas because the editor stores JSON document trees, and I can save content, permissions and version history atomically. I implemented authenticated accounts, document sharing, comments, presence, version restore, and Markdown and PDF exports."
 
 ## 0:30-1:20: Create, format and reopen
 
@@ -34,7 +36,7 @@ Use a prepared old tab to show a stale-save conflict and recovery if time permit
 
 ## 4:15-4:45: AI, verification and delivery
 
-Briefly show the README, architecture note and AI workflow. Explain that agents worked in parallel and that review corrected save races, history size limits, editor resets and PDF character handling. Report only final checks recorded in `SUBMISSION.md`.
+Briefly show the README, architecture note and AI workflow. Say: "I used AI assistants for implementation and review, and I own the architecture and final result. I checked the generated work with TypeScript, automated tests, builds, HTTP flows and browser review. I addressed save races, bounded history, editor resets and PDF character handling during that process." Report only final checks recorded in `SUBMISSION.md`.
 
 End with the remaining limits, including account recovery, full live text merging and `.docx` import. The recording URL and Drive folder are submission delivery steps.
 

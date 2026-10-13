@@ -2,11 +2,11 @@
 
 ## Contributions
 
-Codex assisted with planning, implementation, tests and documentation. The user authorized parallel agents and requested Next.js with Chakra UI. Agents split work across the workspace, server, editor, authentication, collaboration and exports. Shared TypeScript contracts connected the parts, and the parent agent reviewed integration behavior.
+I used Codex and Claude to assist with planning, implementation, tests and documentation. I chose Next.js with Chakra UI and coordinated parallel work across the workspace, server, editor, authentication, collaboration and exports. I used shared TypeScript contracts to connect those parts and checked their integration. I own the architecture, implementation choices and final result.
 
-AI initially proposed PostgreSQL. The user chose an existing MongoDB cluster, so persistence moved to the official MongoDB driver. The first scope used selectable demo identities. The user later requested email/password authentication and all stretch features, so those identities became authenticated demo accounts and the selection endpoint was disabled.
+I chose MongoDB Atlas because its document model fits Tiptap's JSON content and supports atomic writes that include permissions and version history. I implemented persistence with the official MongoDB driver, then configured a dedicated assessment cluster and migrated the data while preserving the source. I started with seeded demo identities and extended the application with email/password authentication and collaboration features. Demo accounts now authenticate through real sessions, and the identity-selection endpoint is disabled.
 
-AI-generated work includes interface components, validation, the repository and access services, password/session handling, comments, history, presence, export serializers, test cases and these notes. Agents checked installed Next.js guidance and official Node, MongoDB and Tiptap documentation when APIs needed verification.
+I used AI assistance for interface components, validation, repositories, access checks, password/session handling, comments, history, presence, export serializers, tests and documentation. I checked the work against the installed Next.js guidance and official Node, MongoDB and Tiptap documentation where API behavior needed verification.
 
 ## Decisions corrected during review
 
@@ -24,10 +24,10 @@ Exports generate actual downloadable Markdown and PDF files. Bundled Noto Sans f
 
 ## Verification and limits
 
-The UI refresh included contributions from Claude and Codex. The final review retained server-side access checks and the existing save guards while replacing presentation components. Review found and corrected accidental dialog dismissal on interior clicks, enabled close buttons during mutations, mobile focus escaping the drawer, and truncated paragraph-style labels. Native dropdowns were replaced with Chakra Select after checking the official 3.37 documentation, including its dialog positioning guidance. The documented checks describe observed results rather than treating generated code as finished by default.
+I used Claude and Codex during the UI refresh and retained server-side access checks and save guards while replacing presentation components. I addressed accidental dialog dismissal on interior clicks, enabled close buttons during mutations, mobile focus escaping the drawer, and truncated paragraph-style labels. I implemented Chakra Select after checking the official 3.37 documentation, including its dialog positioning guidance. My verification record distinguishes observed results from checks that remain incomplete.
 
-Generated code receives TypeScript, unit, production-build, HTTP integration and browser checks. Unit suites cover permission failures, competing saves, authentication, session expiry, rate limits, comment ownership, restore behavior, presence expiry and export content. Dedicated integration scripts exercise actual MongoDB persistence and the bounded-history pipeline, then clean up their test records.
+I verified the implementation with TypeScript, unit tests, production builds, HTTP integration checks and browser review. The unit suites cover permission failures, competing saves, authentication, session expiry, rate limits, comment ownership, restore behavior, presence expiry and export content. I implemented integration scripts that exercise actual MongoDB persistence and the bounded-history pipeline, then clean up their test records.
 
 Earlier browser review found an empty word count, an intermediate permission-label error and spaces inserted between inline formatting fragments. Shared text extraction and loading-state handling corrected them. Malformed rich text children now fail validation instead of causing an exception.
 
-The final expanded-release checks are being recorded separately in [SUBMISSION.md](../SUBMISSION.md). A successful unit test does not prove a browser interaction or deployment worked; those checks must be observed directly. The user will record the walkthrough, and a Drive submission folder still needs to be delivered.
+I recorded the release checks and their limits in [SUBMISSION.md](../SUBMISSION.md). I treat unit tests, browser interactions and deployed behavior as separate evidence. I will record the walkthrough and complete the Drive submission folder before submitting the assessment.

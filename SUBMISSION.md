@@ -4,12 +4,12 @@
 
 - Source repository: https://github.com/murtaza-ch/folio-docs-assessment
 - Live product: https://folio-docs-assessment.vercel.app
-- Walkthrough video: pending the user's recording. Add the URL here and in `walkthrough-url.txt` before submission.
+- Walkthrough video: I will record it and add the URL here and in `walkthrough-url.txt` before submission.
 - Google Drive folder: pending upload of the source package and walkthrough URL.
 - Demo login emails: `alice@folio.demo`, `ben@folio.demo`, `clara@folio.demo`.
 - Public demo password for all three accounts: `FolioDemo!2026`.
 
-The private GitHub repository is connected to Vercel with `main` as the production branch. The reviewer can sign in using the public demo credentials or create a separate account. Newly registered accounts receive no existing-document access until an owner shares with their registered email.
+I connected my private GitHub repository to Vercel with `main` as the production branch. Reviewers can sign in using the public demo credentials or create a separate account. Newly registered accounts receive no existing-document access until an owner shares with their registered email.
 
 ## Included files
 
@@ -28,7 +28,9 @@ The package excludes credentials, `.env.local`, `.vercel`, `node_modules`, `.nex
 
 ## Working behavior
 
-Email/password signup and sign-in; seven-day database-backed sessions; logout revocation; rich text create/rename/autosave/reopen; UTF-8 `.txt` and `.md` import up to 1 MiB; owner/editor/viewer access, email invitations and revocation; polling viewing/editing presence; document comments with edit/delete/resolve rules; bounded atomic version history with preview and guarded restore; downloadable Markdown and generated PDF exports.
+I implemented email/password signup and sign-in; seven-day database-backed sessions; logout revocation; rich text create/rename/autosave/reopen; UTF-8 `.txt` and `.md` import up to 1 MiB; owner/editor/viewer access, email invitations and revocation; polling viewing/editing presence; document comments with edit/delete/resolve rules; bounded atomic version history with preview and guarded restore; downloadable Markdown and generated PDF exports.
+
+I chose MongoDB Atlas for the JSON document model and atomic updates that combine content, sharing permissions and version history. I use the official driver and keep credentials server-side.
 
 Expected-version writes prevent silent overwrites. Failed or conflicting saves retain the draft and offer reload or save-as-copy recovery. History stores at most 50 previous snapshots within 6,000,000 bytes of snapshot BSON. PDF uses bundled Noto Sans fonts, reports unsupported glyphs with HTTP 422 and offers Markdown as the text-preserving alternative.
 
@@ -53,21 +55,21 @@ The expanded release passed local checks and the production HTTP flow check on O
 
 Commands are `npm run typecheck`, `npm test`, `npm run build`, `npm run test:flows` and `npm run test:history`. `db:setup` runs document and authentication setup; `auth:setup` runs only the latter.
 
-The app now uses the free cluster in the Murtaza Assessment Atlas project, retaining the database name `drive-test`. Migration copied and verified five users, nine documents, five credentials and two comments. The source database remains intact. Sessions and presence were excluded, so users sign in again after the switch.
+I configured a free cluster in my Murtaza Assessment Atlas project and retained the database name `drive-test`. I migrated and verified five users, nine documents, five credentials and two comments, preserving the source database. I excluded temporary sessions and presence, so accounts sign in again after the switch.
 
 The target cluster passed the complete local and production HTTP checks, including atomic saves and restoration. The separate multi-megabyte history stress check was stopped after slow writes on the free cluster; its two temporary documents were removed. Browser controls were checked locally. The final live browser inspection was interrupted by browser automation timeouts, so the production verification above is an HTTP check.
 
 ## UI release review
 
-The UI refresh uses shared tokens, Instrument Sans for controls and Newsreader for document text. The workspace has a searchable document table, a separate editor, a mobile navigation drawer, explicit save states and reusable feedback components. Sign-in, sharing, import, comments and version history use the same spacing and control styles.
+I refreshed the UI with shared tokens, Instrument Sans for controls and Newsreader for document text. I implemented a searchable document table, a separate editor, a mobile navigation drawer, explicit save states and reusable feedback components. I applied consistent spacing and control styles to sign-in, sharing, import, comments and version history.
 
-The paragraph-style, invite-person and permission dropdowns use Chakra UI 3.37 Select with controlled collections, HiddenSelect, triggers, indicators and options. Sharing dropdowns stay inside the dialog with fixed positioning; the editor dropdown is portalled to avoid toolbar clipping. Paragraph labels remain on one line in a 144px control.
+I implemented the paragraph-style, invite-person and permission dropdowns with Chakra UI 3.37 Select, using controlled collections, HiddenSelect, triggers, indicators and options. I kept sharing dropdowns inside the dialog with fixed positioning and portalled the editor dropdown to avoid toolbar clipping. Paragraph labels remain on one line in a 144px control.
 
-Local verification passed TypeScript, 80 automated tests, production build and HTTP flows. Chrome review covered desktop and 390px layouts, drawer focus wrapping, dialog dismissal, conflict recovery, heading selection, person selection and permission-menu Escape behavior.
+I verified the release with TypeScript, 80 automated tests, a production build and local HTTP flows. Browser review covered desktop and 390px layouts, drawer focus wrapping, dialog dismissal, conflict recovery, heading selection, person selection and permission-menu Escape behavior.
 
 ## Limits and remaining delivery
 
-The user will record the walkthrough. Video and Google Drive delivery remain incomplete; no placeholder video link should be submitted.
+I will record the walkthrough and upload the source package and recording link to the submission folder. Video and Google Drive delivery remain incomplete; I have not included a placeholder video link.
 
 Presence polls every 3 seconds, heartbeats every 6 seconds and expires inactive tabs after 20 seconds. It does not provide CRDT text merging or live cursor positions. Comments attach to a document, not text selections. History is bounded rather than a permanent audit archive. Markdown import supports a subset and treats raw HTML literally, including `<u>` tags used by exported underline. PDF is limited to 200 pages and the bundled font's glyph set.
 

@@ -36,7 +36,7 @@ Imports persist parsed content in MongoDB. Uploaded binaries are not retained, a
 
 ## Verification record
 
-The expanded release passed the checks below. Live verification follows the production deployment.
+The expanded release passed local checks and the production HTTP flow check on October 14, 2026. GitHub commit `551d7d1` deployed successfully through the connected Vercel project.
 
 | Check                                                 | Final expanded-release result           |
 | ----------------------------------------------------- | --------------------------------------- |
@@ -44,15 +44,18 @@ The expanded release passed the checks below. Live verification follows the prod
 | All automated suites                                  | 80 tests passed across five suites      |
 | Production build                                      | Passed                                  |
 | Auth/signup/logout and permission HTTP flows          | Passed on localhost after migration     |
-| Actual MongoDB history byte bound and competing saves | Passed on source; target rerun pending  |
+| Actual MongoDB history byte bound and competing saves | Passed on source; target stress rerun stopped after slow large writes; temporary records removed |
 | Comments, restore, presence and export HTTP flows     | Passed on localhost after migration     |
 | Browser create/edit/reopen/import/sharing             | Core review passed; sharing rechecked   |
 | Browser authentication and stretch-feature controls   | Sign-in, comments, inline restore and both downloads passed; presence API passed |
-| Public reviewer access to final deployment            | Pending final deployment check          |
+| Public reviewer access to final deployment            | Passed without hosting-team authentication |
+| Expanded production HTTP flow check                   | Passed, including auth, permissions, comments, history/restore, presence, PDF/Markdown, imports and conflicts |
 
 Commands are `npm run typecheck`, `npm test`, `npm run build`, `npm run test:flows` and `npm run test:history`. `db:setup` runs document and authentication setup; `auth:setup` runs only the latter.
 
 The app now uses the free cluster in the Murtaza Assessment Atlas project, retaining the database name `drive-test`. Migration copied and verified five users, nine documents, five credentials and two comments. The source database remains intact. Sessions and presence were excluded, so users sign in again after the switch.
+
+The target cluster passed the complete local and production HTTP checks, including atomic saves and restoration. The separate multi-megabyte history stress check was stopped after slow writes on the free cluster; its two temporary documents were removed. Browser controls were checked locally. The final live browser inspection was interrupted by browser automation timeouts, so the production verification above is an HTTP check.
 
 ## Limits and remaining delivery
 

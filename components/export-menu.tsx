@@ -1,8 +1,17 @@
 "use client";
-import { useState } from "react";
-import { Button } from "@chakra-ui/react";
-import { Download } from "lucide-react";
-import "./presence.css";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { ChevronDown, Download, X } from "lucide-react";
+
+type ExportFormat = "markdown" | "pdf";
+
+const FORMATS: { format: ExportFormat; label: string; title: string }[] = [
+  {
+    format: "markdown",
+    label: "Markdown (.md)",
+    title: "Underline is exported as HTML tags.",
+  },
+  { format: "pdf", label: "PDF (.pdf)", title: "Printable PDF" },
+];
 
 interface Props {
   documentId: string;
@@ -16,7 +25,47 @@ export function ExportMenu({
 }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  async function download(format: "markdown" | "pdf") {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  useEffect(() => {
+    if (!open) return;
+    itemRefs.current[0]?.focus();
+    function closeOutside(event: PointerEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    }
+    window.addEventListener("pointerdown", closeOutside);
+    return () => window.removeEventListener("pointerdown", closeOutside);
+  }, [open]);
+
+  function close() {
+    setOpen(false);
+    triggerRef.current?.focus();
+  }
+
+  function moveFocus(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key === "Escape") {
+      event.stopPropagation();
+      close();
+      return;
+    }
+    if (event.key === "Tab") {
+      event.preventDefault();
+      close();
+      return;
+    }
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+    event.preventDefault();
+    const items = itemRefs.current;
+    const index = items.indexOf(document.activeElement as HTMLButtonElement);
+    const step = event.key === "ArrowDown" ? 1 : -1;
+    items[(index + step + items.length) % items.length]?.focus();
+  }
+
+  async function download(format: ExportFormat) {
+    close();
     setBusy(true);
     setError("");
     try {
@@ -53,32 +102,69 @@ export function ExportMenu({
       setBusy(false);
     }
   }
+
   return (
-    <div className="export-actions">
-      <Button
-        size="xs"
-        variant="ghost"
+    <div className="export-menu" ref={rootRef}>
+      <button
+        ref={triggerRef}
+        type="button"
+        className="btn btn-ghost btn-sm"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls="export-menu-list"
+        aria-label="Export"
         disabled={disabled || busy}
-        onClick={() => void download("markdown")}
-        title="Export saved document as Markdown. Underline uses HTML tags."
+        onClick={() => setOpen((current) => !current)}
       >
-        <Download size={12} />
-        MD
-      </Button>
-      <Button
-        size="xs"
-        variant="ghost"
-        disabled={disabled || busy}
-        onClick={() => void download("pdf")}
-        title="Export saved document as PDF"
-      >
-        <Download size={12} />
-        PDF
-      </Button>
+        {busy ? (
+          <span className="spinner export-menu__spinner" aria-hidden="true" />
+        ) : (
+          <Download size={15} aria-hidden="true" />
+        )}
+        <span className="doc-header__label">Export</span>
+        <ChevronDown
+          className="doc-header__label"
+          size={14}
+          aria-hidden="true"
+        />
+      </button>
+      {open && (
+        <div
+          id="export-menu-list"
+          className="export-menu__list"
+          role="menu"
+          aria-label="Export format"
+          onKeyDown={moveFocus}
+        >
+          {FORMATS.map(({ format, label, title }, index) => (
+            <button
+              key={format}
+              ref={(node) => {
+                itemRefs.current[index] = node;
+              }}
+              type="button"
+              role="menuitem"
+              className="export-menu__item"
+              title={title}
+              onClick={() => void download(format)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
       {error && (
-        <span role="alert" className="export-error">
-          {error}
-        </span>
+        <div className="export-menu__error" role="alert">
+          <span>{error}</span>
+          <button
+            type="button"
+            className="btn btn-ghost btn-icon btn-sm"
+            aria-label="Dismiss export error"
+            onClick={() => setError("")}
+          >
+            <X size={14} aria-hidden="true" />
+          </button>
+        </div>
       )}
     </div>
   );

@@ -141,35 +141,36 @@ export function DocumentPresence({
 
   if (!enabled) return null;
   const participants = snapshot?.participants ?? [];
+  const live = connection === "Live";
+  // "Connecting" is brief on every open, so only problems are shown as text.
+  const problem = !live && connection !== "Connecting";
   return (
     <div
-      className="document-presence"
-      aria-label="Document activity"
-      title="Activity refreshes every 3 seconds; inactive sessions expire after 20 seconds."
+      className="presence"
+      title="Refreshes every 3 seconds; inactive sessions expire after 20 seconds."
     >
-      <div className="presence-avatars">
+      <ul className="presence__avatars" aria-label="People in this document">
         {participants.map(({ user, status }) => {
           const label = `${user.id === currentUserId ? "You are" : `${user.name} is`} ${status}`;
           return (
-            <span
+            <li
               key={user.id}
-              className={`presence-avatar ${status}`}
+              className="avatar avatar-sm presence__avatar"
+              data-status={status}
               style={{ background: user.color }}
               title={label}
               aria-label={label}
             >
               {user.initials}
-              <i aria-hidden="true" />
-            </span>
+            </li>
           );
         })}
-      </div>
+      </ul>
       <span
-        className={`presence-label ${connection === "Live" ? "connected" : ""}`}
+        className={problem ? "presence__status" : "visually-hidden"}
         aria-live="polite"
       >
-        <i aria-hidden="true" />
-        {connection === "Live" ? `${participants.length} online` : connection}
+        {live ? `${participants.length} online` : connection}
       </span>
     </div>
   );

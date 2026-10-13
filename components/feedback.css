@@ -1,0 +1,29 @@
+.inline-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid rgb(180 50 31 / 0.18);
+  border-radius: var(--r-md);
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+}
+.inline-alert > svg {
+  flex: none;
+  margin-top: 1px;
+}
+.inline-alert > p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* The default spinner is drawn for light surfaces; invert it on ink buttons. */
+.btn-primary > .spinner,
+.btn-danger > .spinner {
+  width: 14px;
+  height: 14px;
+  border-color: rgb(255 255 255 / 0.3);
+  border-top-color: #fff;
+}

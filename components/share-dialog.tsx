@@ -1,10 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Button, Input } from "@chakra-ui/react";
-import { LockKeyhole, Trash2 } from "lucide-react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
+import { LockKeyhole, X } from "lucide-react";
 import type { Document, DocumentShare, ShareRole, User } from "@/lib/types";
+import { InlineAlert, Spinner } from "./feedback";
 import { Modal } from "./modal";
+import { SelectField } from "./select-field";
+import "./dialogs.css";
+
+const ROLE_OPTIONS: { value: ShareRole; label: string }[] = [
+  { value: "viewer", label: "Can view" },
+  { value: "editor", label: "Can edit" },
+];
+
+/** `"invite"` while inviting, otherwise the id of the person being changed. */
+type Pending = "invite" | string | null;
 
 export function ShareDialog({
   document,
@@ -21,44 +38,41 @@ export function ShareDialog({
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<ShareRole>("viewer");
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
+  const [pending, setPending] = useState<Pending>(null);
   const [error, setError] = useState("");
-  async function load() {
-    const response = await fetch(`/api/documents/${document.id}/shares`);
+  const busy = pending !== null;
+  const ids = {
+    person: useId(),
+    role: useId(),
+    email: useId(),
+    access: useId(),
+  };
+  const sharesPath = `/api/documents/${document.id}/shares`;
+
+  const load = useCallback(async () => {
+    const response = await fetch(sharesPath);
     const data = await response.json();
     if (!response.ok)
       throw new Error(data.error || "Could not load sharing settings.");
     setShares(data.shares);
     setUsers(data.users);
-  }
+  }, [sharesPath]);
+
   useEffect(() => {
     load()
       .catch((cause) => setError(cause.message))
       .finally(() => setLoading(false));
-  }, [document.id]); // eslint-disable-line react-hooks/exhaustive-deps
-  async function update(
-    userId: string,
-    nextRole?: ShareRole,
-    inviteEmail?: string,
+  }, [load]);
+
+  async function changeAccess(
+    target: Exclude<Pending, null>,
+    path: string,
+    init: RequestInit,
   ) {
-    setBusy(true);
+    setPending(target);
     setError("");
     try {
-      const response = await fetch(
-        `/api/documents/${document.id}/shares${nextRole ? "" : `/${userId}`}`,
-        {
-          method: nextRole ? "POST" : "DELETE",
-          ...(nextRole
-            ? {
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  ...(inviteEmail ? { email: inviteEmail } : { userId }),
-                  role: nextRole,
-                }),
-              }
-            : {}),
-        },
-      );
+      const response = await fetch(path, init);
       if (!response.ok) {
         const result = await response.json();
         throw new Error(result.error || "Could not update access.");
@@ -72,147 +86,229 @@ export function ShareDialog({
         cause instanceof Error ? cause.message : "Could not update access.",
       );
     } finally {
-      setBusy(false);
+      setPending(null);
     }
   }
+  function grant(target: Exclude<Pending, null>, body: object) {
+    return changeAccess(target, sharesPath, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  }
+  function invite(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const inviteEmail = email.trim();
+    if (busy || (!selected && !inviteEmail)) return;
+    void grant(
+      "invite",
+      inviteEmail ? { email: inviteEmail, role } : { userId: selected, role },
+    );
+  }
+  function revoke(userId: string) {
+    void changeAccess(userId, `${sharesPath}/${userId}`, { method: "DELETE" });
+  }
+
   const available = users.filter(
     (user) =>
       user.id !== document.ownerId &&
       !shares.some((share) => share.userId === user.id),
   );
+  const canInvite = Boolean(selected || email.trim());
+
   return (
     <Modal
-      title="Share this document"
+      title={`Share “${document.title || "Untitled document"}”`}
+      closeDisabled={busy}
       onClose={() => {
         if (!busy) onClose();
       }}
-    >
-      <p className="modal-description">
-        Invite someone to{" "}
-        <strong>{document.title || "Untitled document"}</strong>.
-      </p>
-      <div className="share-invite">
-        <label className="visually-hidden" htmlFor="share-user">
-          Person to invite
-        </label>
-        <select
-          id="share-user"
-          value={selected}
-          onChange={(event) => {
-            setSelected(event.target.value);
-            setEmail("");
-          }}
-          disabled={loading || busy}
-        >
-          <option value="">Choose a person</option>
-          {available.map((user) => (
-            <option key={user.id} value={user.id}>
-              {user.name} · {user.email}
-            </option>
-          ))}
-        </select>
-        <label className="visually-hidden" htmlFor="share-role">
-          Invite permission
-        </label>
-        <select
-          id="share-role"
-          value={role}
-          onChange={(event) => setRole(event.target.value as ShareRole)}
+      footer={
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={onClose}
           disabled={busy}
         >
-          <option value="viewer">Can view</option>
-          <option value="editor">Can edit</option>
-        </select>
-      </div>
-      <label className="share-email-label" htmlFor="share-email">
-        Or invite a registered account by email
-      </label>
-      <Input
-        id="share-email"
-        type="email"
-        placeholder="teammate@example.com"
-        value={email}
-        onChange={(event) => {
-          setEmail(event.target.value);
-          setSelected("");
-        }}
-        disabled={busy}
-      />
-      <Button
-        className="primary-button invite-button"
-        onClick={() => update(selected, role, email.trim() || undefined)}
-        disabled={(!selected && !email.trim()) || busy}
-      >
-        {busy ? "Updating access..." : "Invite person"}
-      </Button>
-      {error && (
-        <p className="form-error" role="alert">
-          {error}
-        </p>
-      )}
-      <h3 className="small-heading">People with access</h3>
-      <div className="share-person">
-        <span className="avatar" style={{ background: document.owner.color }}>
-          {document.owner.initials}
-        </span>
-        <div>
-          <strong>{document.owner.name}</strong>
-          <span>{document.owner.email}</span>
-        </div>
-        <span className="access-label">Owner</span>
-      </div>
-      {loading ? (
-        <p className="loading-copy" role="status">
-          Loading access...
-        </p>
-      ) : (
-        shares.map((share) => (
-          <div className="share-person" key={share.userId}>
-            <span className="avatar" style={{ background: share.user.color }}>
-              {share.user.initials}
-            </span>
-            <div>
-              <strong>{share.user.name}</strong>
-              <span>{share.user.email}</span>
-            </div>
-            <select
-              aria-label={`Access for ${share.user.name}`}
-              value={share.role}
-              onChange={(event) =>
-                update(share.userId, event.target.value as ShareRole)
-              }
-              disabled={busy}
-            >
-              <option value="viewer">Can view</option>
-              <option value="editor">Can edit</option>
-            </select>
-            <Button
-              variant="ghost"
-              size="xs"
-              aria-label={`Remove ${share.user.name}'s access`}
-              disabled={busy}
-              onClick={() => update(share.userId)}
-            >
-              <Trash2 size={15} />
-            </Button>
-          </div>
-        ))
-      )}
-      <div className="sharing-note">
-        <LockKeyhole size={16} />
-        <div>
-          <strong>Only invited people have access</strong>
-          <p>
-            Viewers can read and comment. Editors can write and restore
-            versions. You manage sharing.
-          </p>
-        </div>
-      </div>
-      <div className="modal-actions">
-        <Button variant="outline" onClick={onClose} disabled={busy}>
           Done
-        </Button>
-      </div>
+        </button>
+      }
+    >
+      <form className="share-invite" onSubmit={invite}>
+        <div className="share-invite-row">
+          <label className="visually-hidden" htmlFor={ids.person}>
+            Person to invite
+          </label>
+          <SelectField
+            id={ids.person}
+            className="share-person-select"
+            label="Person to invite"
+            insideDialog
+            options={available.map((user) => ({
+              value: user.id,
+              label: `${user.name} · ${user.email}`,
+            }))}
+            placeholder={
+              loading
+                ? "Loading people…"
+                : available.length
+                  ? "Choose a person"
+                  : "No one else to suggest"
+            }
+            value={selected}
+            onChange={(value) => {
+              setSelected(value);
+              setEmail("");
+            }}
+            disabled={loading || busy || available.length === 0}
+          />
+          <label className="visually-hidden" htmlFor={ids.role}>
+            Permission for the invited person
+          </label>
+          <RoleSelect
+            id={ids.role}
+            value={role}
+            onChange={setRole}
+            disabled={busy}
+          />
+          <button
+            type="submit"
+            className="btn btn-primary share-invite-submit"
+            disabled={!canInvite || busy}
+          >
+            {pending === "invite" && <Spinner />}
+            {pending === "invite" ? "Inviting…" : "Invite"}
+          </button>
+        </div>
+        <label className="share-email" htmlFor={ids.email}>
+          <span>Or invite a registered account by email</span>
+          <input
+            id={ids.email}
+            className="field"
+            type="email"
+            autoComplete="off"
+            placeholder="name@company.com"
+            value={email}
+            onChange={(event) => {
+              setEmail(event.target.value);
+              setSelected("");
+            }}
+            disabled={busy}
+          />
+        </label>
+      </form>
+
+      {error && <InlineAlert>{error}</InlineAlert>}
+
+      <section className="share-access" aria-labelledby={ids.access}>
+        <h3 id={ids.access} className="share-section-title">
+          People with access
+        </h3>
+        <ul className="share-people" aria-busy={loading}>
+          <PersonRow person={document.owner}>
+            <span className="share-owner-label">Owner</span>
+          </PersonRow>
+          {loading ? (
+            <>
+              <SkeletonRow />
+              <SkeletonRow />
+            </>
+          ) : (
+            shares.map((share) => (
+              <PersonRow key={share.userId} person={share.user}>
+                <RoleSelect
+                  compact
+                  aria-label={`Access for ${share.user.name}`}
+                  value={share.role}
+                  onChange={(nextRole) =>
+                    grant(share.userId, {
+                      userId: share.userId,
+                      role: nextRole,
+                    })
+                  }
+                  disabled={busy}
+                />
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-icon btn-sm"
+                  aria-label={`Remove ${share.user.name}'s access`}
+                  title="Remove access"
+                  disabled={busy}
+                  onClick={() => revoke(share.userId)}
+                >
+                  {pending === share.userId ? <Spinner /> : <X size={16} />}
+                </button>
+              </PersonRow>
+            ))
+          )}
+        </ul>
+      </section>
+
+      <p className="share-note">
+        <LockKeyhole size={14} aria-hidden />
+        Only people listed here can open this document. Viewers can read and
+        comment; editors can also edit and restore versions.
+      </p>
     </Modal>
+  );
+}
+
+function RoleSelect({
+  value,
+  onChange,
+  compact = false,
+  ...props
+}: {
+  value: ShareRole;
+  onChange: (role: ShareRole) => void;
+  compact?: boolean;
+  id?: string;
+  disabled?: boolean;
+  "aria-label"?: string;
+}) {
+  return (
+    <SelectField
+      id={props.id}
+      disabled={props.disabled}
+      label={props["aria-label"] ?? "Permission for the invited person"}
+      className={`share-role-select${compact ? " is-compact" : ""}`}
+      insideDialog
+      options={ROLE_OPTIONS}
+      value={value}
+      onChange={(next) => onChange(next as ShareRole)}
+    />
+  );
+}
+
+function PersonRow({
+  person,
+  children,
+}: {
+  person: User;
+  children: ReactNode;
+}) {
+  return (
+    <li className="share-person">
+      <span className="avatar" style={{ background: person.color }} aria-hidden>
+        {person.initials}
+      </span>
+      <div className="share-person-text">
+        <strong>{person.name}</strong>
+        <span>{person.email}</span>
+      </div>
+      <div className="share-person-actions">{children}</div>
+    </li>
+  );
+}
+
+function SkeletonRow() {
+  return (
+    <li className="share-person is-skeleton" aria-hidden>
+      <span className="avatar skeleton" />
+      <div className="share-person-text">
+        <span className="skeleton skeleton-line" />
+        <span className="skeleton skeleton-line is-short" />
+      </div>
+    </li>
   );
 }

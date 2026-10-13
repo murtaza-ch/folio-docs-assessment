@@ -1,24 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Box, Button, Flex, Input } from "@chakra-ui/react";
-import {
-  ArrowLeft,
-  ArrowUpRight,
-  Check,
-  LogOut,
-  MessageSquare,
-  Cloud,
-  FileText,
-  FolderOpen,
-  LockKeyhole,
-  Plus,
-  Search,
-  Share2,
-  Upload,
-  Users,
-  X,
-} from "lucide-react";
+import { Menu, Plus } from "lucide-react";
 import { documentWordCount } from "@/lib/document-text";
 import type { JSONContent } from "@tiptap/react";
 import type {
@@ -27,16 +10,21 @@ import type {
   RichTextDocument,
   User,
 } from "@/lib/types";
-import { DocumentEditor } from "./document-editor";
-import { DocumentList, relativeDate } from "./document-list";
-import { ImportDialog } from "./import-dialog";
-import { ShareDialog } from "./share-dialog";
 import { AuthScreen } from "./auth-screen";
+import { Brand } from "./brand";
 import { DocumentActivity } from "./document-activity";
+import { matchesFilter, type DocumentFilter } from "./document-filter";
+import { DocumentHeader } from "./document-header";
+import { DocumentHome } from "./document-home";
+import { DocumentPage } from "./document-page";
 import { DocumentPresence } from "./document-presence";
-import { ExportMenu } from "./export-menu";
+import { ImportDialog } from "./import-dialog";
+import { Modal } from "./modal";
+import type { SaveState } from "./save-status";
+import { ShareDialog } from "./share-dialog";
+import { Sidebar } from "./sidebar";
+import { WorkspaceAlert } from "./workspace-alert";
 
-type SaveState = "saved" | "unsaved" | "saving" | "error" | "conflict";
 type Draft = { title: string; content: RichTextDocument };
 
 class RequestError extends Error {
@@ -58,6 +46,13 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
   return result;
 }
 
+/** Readable message for a failed request; network failures get a plain explanation. */
+function errorMessage(cause: unknown, fallback: string) {
+  if (cause instanceof TypeError)
+    return "You appear to be offline. Check your connection and try again.";
+  return cause instanceof Error ? cause.message : fallback;
+}
+
 export function Workspace() {
   const [user, setUser] = useState<User | null>(null);
   const [activityOpen, setActivityOpen] = useState(false);
@@ -67,7 +62,7 @@ export function Workspace() {
   const [documents, setDocuments] = useState<DocumentSummary[]>([]);
   const [document, setDocument] = useState<Document | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState<DocumentFilter>("all");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -75,6 +70,9 @@ export function Workspace() {
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const [importOpen, setImportOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
+  const [reloadConfirm, setReloadConfirm] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const documentRef = useRef<Document | null>(null);
   const draftRef = useRef<Draft | null>(null);
   const dirtyRef = useRef(false);
@@ -145,9 +143,7 @@ export function Workspace() {
         } catch (cause) {
           setSaveState("error");
           setError(
-            cause instanceof Error
-              ? cause.message
-              : "Your changes could not be saved. Try again.",
+            errorMessage(cause, "Your changes could not be saved. Try again."),
           );
           return false;
         }
@@ -178,19 +174,9 @@ export function Workspace() {
         );
         if (!active) return;
         setDocuments(data.documents);
-        if (data.documents[0]) {
-          const detail = await request<{ document: Document }>(
-            `/api/documents/${data.documents[0].id}`,
-          );
-          if (active) openDocument(detail.document);
-        }
       } catch (cause) {
         if (active)
-          setError(
-            cause instanceof Error
-              ? cause.message
-              : "Could not open your workspace.",
-          );
+          setError(errorMessage(cause, "Could not open your workspace."));
       } finally {
         if (active) setLoading(false);
       }
@@ -198,7 +184,7 @@ export function Workspace() {
     return () => {
       active = false;
     };
-  }, [openDocument]);
+  }, []);
 
   useEffect(() => {
     if (!dirtyRef.current || conflictRef.current) return;
@@ -249,11 +235,7 @@ export function Workspace() {
       );
       openDocument(data.document);
     } catch (cause) {
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : "Could not open this document.",
-      );
+      setError(errorMessage(cause, "Could not open this document."));
     } finally {
       setBusy(false);
     }
@@ -274,9 +256,7 @@ export function Workspace() {
       setFilter("all");
       setSearch("");
     } catch (cause) {
-      setError(
-        cause instanceof Error ? cause.message : "Could not create a document.",
-      );
+      setError(errorMessage(cause, "Could not create a document."));
     } finally {
       setBusy(false);
     }
@@ -316,20 +296,8 @@ export function Workspace() {
       setFilter("all");
       setSearch("");
       setSaveState("saved");
-      if (data.documents[0])
-        openDocument(
-          (
-            await request<{ document: Document }>(
-              `/api/documents/${data.documents[0].id}`,
-            )
-          ).document,
-        );
     } catch (cause) {
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : "Could not load your documents.",
-      );
+      setError(errorMessage(cause, "Could not load your documents."));
     } finally {
       setLoading(false);
     }
@@ -355,11 +323,7 @@ export function Workspace() {
       setRemoteNotice(false);
       setError("");
     } catch (cause) {
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : "Could not sign out. Please try again.",
-      );
+      setError(errorMessage(cause, "Could not sign out. Please try again."));
     } finally {
       setBusy(false);
     }
@@ -452,425 +416,246 @@ export function Workspace() {
       openDocument(data.document);
       updateSummary(data.document);
     } catch (cause) {
-      setError(
-        cause instanceof Error ? cause.message : "Could not save a copy.",
-      );
+      setError(errorMessage(cause, "Could not save a copy."));
     } finally {
       setBusy(false);
     }
   }
   const filtered = documents.filter(
     (item) =>
-      (filter === "all" ||
-        (filter === "owned" ? item.role === "owner" : item.role !== "owner")) &&
+      matchesFilter(item, filter) &&
       `${item.title} ${item.excerpt}`
         .toLowerCase()
         .includes(search.toLowerCase()),
   );
   const ownedCount = documents.filter((item) => item.role === "owner").length;
+  const counts: Record<DocumentFilter, number> = {
+    all: documents.length,
+    owned: ownedCount,
+    shared: documents.length - ownedCount,
+  };
   const wordCount = draft ? documentWordCount(draft.content) : 0;
+
+  function closeNav() {
+    setNavOpen(false);
+    menuButtonRef.current?.focus();
+  }
+  function chooseFilter(next: DocumentFilter) {
+    setFilter(next);
+    setNavOpen(false);
+    void backToDocuments();
+  }
+  function goHome() {
+    setNavOpen(false);
+    void backToDocuments();
+  }
+  function navigateTo(id: string) {
+    setNavOpen(false);
+    void selectDocument(id);
+  }
+  function startDocument() {
+    setNavOpen(false);
+    void createDocument();
+  }
+  function startImport() {
+    setNavOpen(false);
+    void showImport();
+  }
+  function reloadLatest() {
+    if (conflictRef.current) setReloadConfirm(true);
+  }
 
   if (!user && loading)
     return (
       <main className="session-loading" role="status">
-        Opening your workspace...
+        <span className="spinner" aria-hidden="true" />
+        Loading workspace…
       </main>
     );
   if (!user) return <AuthScreen onAuthenticated={authenticated} />;
   return (
-    <Flex className={`workspace ${document ? "document-open" : ""}`}>
-      <Box as="aside" className="sidebar">
-        <a
-          className="brand"
-          href="/"
-          aria-label="Folio home"
-          onClick={(event) => {
-            event.preventDefault();
-            void backToDocuments();
-          }}
-        >
-          <span className="brand-mark">
-            <span />
-            <span />
-            <span />
-          </span>
-          folio<span className="brand-period">.</span>
-        </a>
-        <div className="workspace-label">PERSONAL WORKSPACE</div>
-        <Button
-          className="new-document-button"
-          onClick={createDocument}
-          disabled={busy || loading || !user}
-        >
-          <Plus size={18} />
-          New document
-        </Button>
-        <nav className="main-nav" aria-label="Workspace navigation">
-          <button
-            className={filter === "all" ? "active" : ""}
-            onClick={() => setFilter("all")}
-          >
-            <FolderOpen size={18} />
-            All documents<span>{documents.length}</span>
-          </button>
-          <button
-            className={filter === "owned" ? "active" : ""}
-            onClick={() => setFilter("owned")}
-          >
-            <FileText size={18} />
-            Owned by me<span>{ownedCount}</span>
-          </button>
-          <button
-            className={filter === "shared" ? "active" : ""}
-            onClick={() => setFilter("shared")}
-          >
-            <Users size={18} />
-            Shared with me<span>{documents.length - ownedCount}</span>
-          </button>
-        </nav>
-        <div className="sidebar-divider" />
-        <button
-          className="import-nav"
-          onClick={showImport}
-          disabled={busy || loading || !user}
-        >
-          <Upload size={17} />
-          Import document
-          <ArrowUpRight size={14} />
-        </button>
-        <div className="sidebar-bottom">
-          <div className="workspace-note">
-            <span className="note-line" />
-            <p>
-              A little space.
-              <br />A lot of possibility.
-            </p>
-          </div>
-          <div className="account">
-            <span
-              className="avatar"
-              style={{ background: user?.color || "#d9dce4" }}
-            >
-              {user?.initials || "..."}
-            </span>
-            <div>
-              <strong>{user?.name || "Opening workspace"}</strong>
-              <span>{user?.email}</span>
-            </div>
+    <div className="app">
+      <Sidebar
+        user={user}
+        documents={filtered}
+        counts={counts}
+        filter={filter}
+        search={search}
+        selectedId={document?.id}
+        loading={loading}
+        busy={busy}
+        open={navOpen}
+        onOpen={() => setNavOpen(true)}
+        onClose={closeNav}
+        onHome={goHome}
+        onSearch={setSearch}
+        onFilter={chooseFilter}
+        onSelect={navigateTo}
+        onCreate={startDocument}
+        onImport={startImport}
+        onSignOut={signOut}
+      />
+      <main className="main" aria-busy={busy}>
+        {document && draft ? (
+          <DocumentHeader
+            documentId={document.id}
+            title={draft.title}
+            role={document.role}
+            saveState={saveState}
+            busy={busy}
+            presence={
+              <DocumentPresence
+                documentId={document.id}
+                currentUserId={user.id}
+                editing={activelyEditing && document.role !== "viewer"}
+                enabled={!busy}
+                onRemoteUpdate={remoteUpdate}
+              />
+            }
+            onBack={backToDocuments}
+            onActivity={showActivity}
+            onShare={showShare}
+            beforeExport={flush}
+          />
+        ) : (
+          <header className="mobile-bar">
             <button
-              className="account-logout"
-              aria-label="Sign out"
-              title="Sign out"
-              disabled={busy || loading}
-              onClick={signOut}
+              ref={menuButtonRef}
+              type="button"
+              className="btn btn-ghost btn-icon"
+              aria-label="Open navigation"
+              aria-expanded={navOpen}
+              onClick={() => setNavOpen(true)}
             >
-              <LogOut size={16} />
+              <Menu size={18} aria-hidden="true" />
             </button>
-          </div>
-        </div>
-      </Box>
-      <Box as="main" className="main-workspace">
-        <Flex
-          className="workspace-header"
-          align="center"
-          justify="space-between"
-        >
-          <div className="header-path">
-            <span>Workspace</span>
-            <span className="path-slash">/</span>
-            <strong>Documents</strong>
-          </div>
-          <div className="search-field">
-            <Search size={16} />
-            <Input
-              aria-label="Search documents"
-              placeholder="Search your documents"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              variant="flushed"
-            />
-            {search && (
-              <button onClick={() => setSearch("")} aria-label="Clear search">
-                <X size={14} />
-              </button>
-            )}
-          </div>
-          <select
-            className="mobile-filter"
-            aria-label="Filter documents"
-            value={filter}
-            onChange={(event) => setFilter(event.target.value)}
-          >
-            <option value="all">All documents</option>
-            <option value="owned">Owned by me</option>
-            <option value="shared">Shared with me</option>
-          </select>
-          <div className="header-session">
-            <span className="header-private">
-              <LockKeyhole size={13} />
-              Private by default
-            </span>
+            <Brand />
             <button
-              className="header-account-button"
-              aria-label="Sign out of your account"
-              onClick={signOut}
+              type="button"
+              className="btn btn-ghost btn-icon"
+              aria-label="New document"
+              onClick={createDocument}
               disabled={busy || loading}
             >
-              <LogOut size={14} />
-              <span>Sign out</span>
+              <Plus size={18} aria-hidden="true" />
             </button>
-          </div>
-        </Flex>
+          </header>
+        )}
         {error && (
-          <div
-            className={`workspace-error ${saveState === "conflict" ? "conflict" : ""}`}
-            role="alert"
+          <WorkspaceAlert
+            tone={saveState === "conflict" ? "warning" : "danger"}
+            message={error}
           >
-            <span>{error}</span>
             {saveState === "error" && (
               <>
-                <Button size="xs" variant="outline" onClick={() => flush()}>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => flush()}
+                >
                   Retry save
-                </Button>
-                <Button
-                  size="xs"
-                  variant="outline"
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
                   onClick={keepCopy}
                   disabled={busy}
                 >
                   Save a copy
-                </Button>
+                </button>
               </>
             )}
             {saveState === "conflict" && (
               <>
-                <Button
-                  size="xs"
-                  variant="outline"
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
                   onClick={keepCopy}
                   disabled={busy}
                 >
                   Save my writing as a copy
-                </Button>
-                <Button
-                  size="xs"
-                  variant="outline"
-                  onClick={() => {
-                    if (
-                      conflictRef.current &&
-                      window.confirm(
-                        "Reload the latest version? Your unsaved changes in this document will be discarded.",
-                      )
-                    )
-                      openDocument(conflictRef.current);
-                  }}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={reloadLatest}
                   disabled={busy}
                 >
                   Reload latest
-                </Button>
-              </>
-            )}
-          </div>
-        )}
-        <div className="workspace-body">
-          <DocumentList
-            documents={filtered}
-            selectedId={document?.id}
-            onSelect={selectDocument}
-            onCreate={createDocument}
-            loading={loading}
-            busy={busy}
-            search={search}
-            filter={filter}
-          />
-          <section
-            className="writing-area"
-            aria-label="Document workspace"
-            aria-busy={busy}
-          >
-            {document && draft ? (
-              <>
-                <div className="document-topbar">
-                  <div className="document-breadcrumb">
-                    <button
-                      className="mobile-back"
-                      aria-label="Back to documents"
-                      onClick={backToDocuments}
-                    >
-                      <ArrowLeft size={18} />
-                    </button>
-                    <FileText size={15} />
-                    <span>{draft.title || "Untitled document"}</span>
-                  </div>
-                  <div className="document-actions">
-                    <span
-                      className={`save-status ${saveState}`}
-                      aria-live="polite"
-                    >
-                      {document.role === "viewer" ? (
-                        <>
-                          <LockKeyhole size={13} />
-                          View only
-                        </>
-                      ) : saveState === "saved" ? (
-                        <>
-                          <Check size={14} />
-                          All changes saved
-                        </>
-                      ) : saveState === "saving" ? (
-                        <>
-                          <Cloud size={14} />
-                          Saving...
-                        </>
-                      ) : saveState === "unsaved" ? (
-                        "Unsaved changes"
-                      ) : saveState === "conflict" ? (
-                        "Changes need review"
-                      ) : (
-                        "Not saved"
-                      )}
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="document-tool-button"
-                      onClick={showActivity}
-                      disabled={busy}
-                    >
-                      <MessageSquare size={14} />
-                      <span>Comments & history</span>
-                    </Button>
-                    <ExportMenu
-                      documentId={document.id}
-                      beforeExport={flush}
-                      disabled={busy}
-                    />
-                    {document.role === "owner" && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="share-button"
-                        onClick={showShare}
-                        disabled={busy}
-                      >
-                        <Share2 size={14} />
-                        Share
-                      </Button>
-                    )}
-                  </div>
-                </div>
-                <div className="document-scroll">
-                  <div className="document-cover">
-                    <span className="document-kicker">
-                      {document.role === "owner"
-                        ? "YOUR DOCUMENT"
-                        : "SHARED DOCUMENT"}
-                    </span>
-                    <Input
-                      className="document-title"
-                      aria-label="Document title"
-                      value={draft.title}
-                      placeholder="Untitled document"
-                      onChange={(event) =>
-                        draftRef.current &&
-                        edit({ ...draftRef.current, title: event.target.value })
-                      }
-                      maxLength={160}
-                      onBlur={() => {
-                        if (draftRef.current && !draftRef.current.title.trim())
-                          edit({
-                            ...draftRef.current,
-                            title: "Untitled document",
-                          });
-                      }}
-                      readOnly={document.role === "viewer" || busy}
-                      variant="flushed"
-                    />
-                    <div className="document-meta">
-                      <span
-                        className="mini-avatar"
-                        style={{ background: document.owner.color }}
-                      >
-                        {document.owner.initials}
-                      </span>
-                      <span>{document.owner.name}</span>
-                      <span className="meta-dot">·</span>
-                      <span>
-                        Updated {relativeDate(document.updatedAt).toLowerCase()}
-                      </span>
-                      <span className="meta-dot">·</span>
-                      <span>
-                        {wordCount} {wordCount === 1 ? "word" : "words"}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="document-live-row">
-                    <DocumentPresence
-                      documentId={document.id}
-                      currentUserId={user?.id || ""}
-                      editing={activelyEditing && document.role !== "viewer"}
-                      enabled={!busy}
-                      onRemoteUpdate={remoteUpdate}
-                    />
-                    {remoteNotice && (
-                      <span className="remote-change-notice" role="status">
-                        A teammate saved a newer version. Your draft is safe.
-                      </span>
-                    )}
-                  </div>
-                  <DocumentEditor
-                    key={document.id}
-                    content={draft.content}
-                    onChange={(content: JSONContent) => {
-                      if (draftRef.current)
-                        edit({
-                          ...draftRef.current,
-                          content: content as RichTextDocument,
-                        });
-                    }}
-                    editable={document.role !== "viewer"}
-                    disabled={busy}
-                  />
-                </div>
-              </>
-            ) : (
-              <div className="welcome-state">
-                <span className="welcome-illustration">
-                  <FileText size={45} strokeWidth={1.1} />
-                  <span />
-                </span>
-                <span className="document-kicker">MAKE ROOM FOR AN IDEA</span>
-                <h1>
-                  Your next chapter
-                  <br />
-                  starts here.
-                </h1>
-                <p>
-                  A place to write, think, and work together.
-                  <br />
-                  Open a document, or start with a blank page.
-                </p>
-                <Button
-                  className="primary-button"
-                  onClick={createDocument}
-                  disabled={busy || loading || !user}
-                >
-                  <Plus size={17} />
-                  Create a document
-                </Button>
-                <button
-                  className="welcome-import"
-                  onClick={showImport}
-                  disabled={busy || loading || !user}
-                >
-                  Or import something you have written{" "}
-                  <ArrowUpRight size={14} />
                 </button>
-              </div>
+              </>
             )}
-          </section>
+          </WorkspaceAlert>
+        )}
+        <div className="main__scroll">
+          {document && draft ? (
+            <DocumentPage
+              key={document.id}
+              document={document}
+              title={draft.title}
+              content={draft.content}
+              wordCount={wordCount}
+              busy={busy}
+              remoteNotice={remoteNotice}
+              onTitleChange={(title) =>
+                draftRef.current && edit({ ...draftRef.current, title })
+              }
+              onTitleBlur={() => {
+                if (draftRef.current && !draftRef.current.title.trim())
+                  edit({ ...draftRef.current, title: "Untitled document" });
+              }}
+              onContentChange={(content: JSONContent) => {
+                if (draftRef.current)
+                  edit({
+                    ...draftRef.current,
+                    content: content as RichTextDocument,
+                  });
+              }}
+            />
+          ) : (
+            <DocumentHome
+              documents={filtered}
+              filter={filter}
+              search={search}
+              loading={loading}
+              busy={busy}
+              onOpen={selectDocument}
+              onCreate={createDocument}
+              onImport={showImport}
+              onClearSearch={() => setSearch("")}
+            />
+          )}
         </div>
-      </Box>
+      </main>
+      {reloadConfirm && saveState === "conflict" && (
+        <Modal
+          title="Reload latest version?"
+          description="Your unsaved changes will be discarded. Save a copy first if you want to keep them."
+          onClose={() => setReloadConfirm(false)}
+          footer={
+            <>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                autoFocus
+                onClick={() => setReloadConfirm(false)}
+              >
+                Keep editing
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={() => {
+                  if (conflictRef.current) openDocument(conflictRef.current);
+                  setReloadConfirm(false);
+                }}
+              >
+                Reload latest
+              </button>
+            </>
+          }
+        />
+      )}
       {activityOpen && document && user && (
         <DocumentActivity
           document={document}
@@ -907,6 +692,6 @@ export function Workspace() {
           }}
         />
       )}
-    </Flex>
+    </div>
   );
 }

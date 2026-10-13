@@ -1,78 +1,36 @@
-.document-presence {
+.presence {
   display: flex;
   align-items: center;
-  gap: 9px;
-  min-height: 30px;
+  gap: 8px;
+  min-width: 0;
 }
-.presence-avatars {
+.presence__avatars {
   display: flex;
-  padding-left: 5px;
+  margin: 0;
+  padding: 0 0 0 6px;
+  list-style: none;
 }
-.presence-avatar {
-  display: inline-flex;
+.presence__avatar {
   position: relative;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  margin-left: -5px;
-  border: 2px solid #fff;
-  border-radius: 50%;
-  font-size: 9px;
-  font-weight: 700;
-  color: #25334a;
+  margin-left: -6px;
+  box-shadow:
+    0 0 0 2px var(--surface),
+    inset 0 0 0 1px rgb(27 26 23 / 0.06);
+  cursor: default;
 }
-.presence-avatar i {
+.presence__avatar[data-status="editing"]::after {
+  content: "";
   position: absolute;
-  right: -1px;
-  bottom: -1px;
-  width: 7px;
-  height: 7px;
-  border: 1px solid white;
+  right: -2px;
+  bottom: -2px;
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--surface);
   border-radius: 50%;
-  background: #459775;
+  background: var(--accent);
 }
-.presence-avatar.editing i {
-  background: #4969c9;
-  box-shadow: 0 0 0 2px #e8efff;
-}
-.presence-label {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 10px;
-  color: #7a8090;
+.presence__status {
+  font-size: var(--text-xs);
+  color: var(--ink-3);
   white-space: nowrap;
-}
-.presence-label > i {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #b3b9c4;
-}
-.presence-label.connected > i {
-  background: #459775;
-}
-.export-actions {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-.export-error {
-  font-size: 11px;
-  color: #a23b34;
-  max-width: 220px;
-}
-@media (max-width: 640px) {
-  .presence-label {
-    font-size: 9px;
-  }
-  .presence-avatar {
-    width: 24px;
-    height: 24px;
-  }
-  .export-actions .chakra-button {
-    padding-inline: 6px;
-    font-size: 10px;
-  }
 }

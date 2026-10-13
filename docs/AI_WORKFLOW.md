@@ -24,6 +24,8 @@ Exports generate actual downloadable Markdown and PDF files. Bundled Noto Sans f
 
 ## Verification and limits
 
+The UI refresh included contributions from Claude and Codex. The final review retained server-side access checks and the existing save guards while replacing presentation components. Review found and corrected accidental dialog dismissal on interior clicks, enabled close buttons during mutations, mobile focus escaping the drawer, and truncated paragraph-style labels. Native dropdowns were replaced with Chakra Select after checking the official 3.37 documentation, including its dialog positioning guidance. The documented checks describe observed results rather than treating generated code as finished by default.
+
 Generated code receives TypeScript, unit, production-build, HTTP integration and browser checks. Unit suites cover permission failures, competing saves, authentication, session expiry, rate limits, comment ownership, restore behavior, presence expiry and export content. Dedicated integration scripts exercise actual MongoDB persistence and the bounded-history pipeline, then clean up their test records.
 
 Earlier browser review found an empty word count, an intermediate permission-label error and spaces inserted between inline formatting fragments. Shared text extraction and loading-state handling corrected them. Malformed rich text children now fail validation instead of causing an exception.

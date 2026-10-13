@@ -57,6 +57,14 @@ The app now uses the free cluster in the Murtaza Assessment Atlas project, retai
 
 The target cluster passed the complete local and production HTTP checks, including atomic saves and restoration. The separate multi-megabyte history stress check was stopped after slow writes on the free cluster; its two temporary documents were removed. Browser controls were checked locally. The final live browser inspection was interrupted by browser automation timeouts, so the production verification above is an HTTP check.
 
+## UI release review
+
+The UI refresh uses shared tokens, Instrument Sans for controls and Newsreader for document text. The workspace has a searchable document table, a separate editor, a mobile navigation drawer, explicit save states and reusable feedback components. Sign-in, sharing, import, comments and version history use the same spacing and control styles.
+
+The paragraph-style, invite-person and permission dropdowns use Chakra UI 3.37 Select with controlled collections, HiddenSelect, triggers, indicators and options. Sharing dropdowns stay inside the dialog with fixed positioning; the editor dropdown is portalled to avoid toolbar clipping. Paragraph labels remain on one line in a 144px control.
+
+Local verification passed TypeScript, 80 automated tests, production build and HTTP flows. Chrome review covered desktop and 390px layouts, drawer focus wrapping, dialog dismissal, conflict recovery, heading selection, person selection and permission-menu Escape behavior.
+
 ## Limits and remaining delivery
 
 The user will record the walkthrough. Video and Google Drive delivery remain incomplete; no placeholder video link should be submitted.

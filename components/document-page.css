@@ -1,0 +1,299 @@
+.canvas {
+  padding: 32px 24px 96px;
+  animation: fade-up 0.16s var(--ease);
+}
+.sheet {
+  max-width: 816px;
+  margin: 0 auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Formatting toolbar, pinned to the top of the scroll area while writing */
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  background: var(--surface);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.toolbar .toolbar__select {
+  flex: none;
+  width: 144px;
+  height: 30px;
+  border-color: transparent;
+  background-color: transparent;
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+.toolbar__divider {
+  flex: none;
+  width: 1px;
+  height: 18px;
+  margin: 0 6px;
+  background: var(--line);
+}
+.toolbar__button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--ink-2);
+  transition:
+    background 0.12s var(--ease),
+    color 0.12s var(--ease);
+}
+.toolbar__button:hover:not(:disabled) {
+  background: var(--hover-soft);
+  color: var(--ink);
+}
+.toolbar__button[aria-pressed="true"] {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+.toolbar__button:disabled {
+  opacity: 0.35;
+}
+
+.sheet__notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--line);
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+}
+
+.sheet__body {
+  padding: 56px 72px 80px;
+}
+.sheet__title {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-doc), Georgia, serif;
+  font-size: 40px;
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  resize: none;
+  overflow: hidden;
+}
+.sheet__title:focus-visible {
+  box-shadow: none;
+}
+.sheet__title::placeholder {
+  color: var(--ink-4);
+}
+.sheet__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 14px 0 0;
+  color: var(--ink-3);
+  font-size: var(--text-sm);
+}
+.sheet__meta .avatar {
+  margin-right: 2px;
+}
+.sheet__remote {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 20px 0 0;
+  padding: 8px 12px;
+  border-radius: var(--r-md);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-size: var(--text-sm);
+}
+.sheet__content {
+  margin-top: 32px;
+}
+.sheet__loading {
+  margin: 32px 0 0;
+  color: var(--ink-3);
+  font-size: var(--text-sm);
+}
+
+/* Document prose */
+.folio-prose {
+  min-height: 320px;
+  color: var(--ink);
+  font-family: var(--font-doc), Georgia, serif;
+  font-size: 18px;
+  line-height: 1.7;
+  overflow-wrap: break-word;
+}
+.folio-prose:focus,
+.folio-prose:focus-visible {
+  outline: none;
+}
+.folio-prose > :first-child {
+  margin-top: 0;
+}
+.folio-prose p {
+  margin: 0 0 0.8em;
+}
+.folio-prose h1,
+.folio-prose h2,
+.folio-prose h3,
+.folio-prose h4,
+.folio-prose h5,
+.folio-prose h6 {
+  margin: 1.6em 0 0.5em;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.folio-prose h1 {
+  font-size: 1.75em;
+  letter-spacing: -0.02em;
+}
+.folio-prose h2 {
+  font-size: 1.42em;
+  letter-spacing: -0.015em;
+}
+.folio-prose h3 {
+  font-size: 1.17em;
+}
+.folio-prose h4 {
+  font-size: 1em;
+}
+.folio-prose h5 {
+  font-size: 0.9em;
+}
+.folio-prose h6 {
+  font-size: 0.85em;
+  color: var(--ink-2);
+}
+.folio-prose strong {
+  font-weight: 600;
+}
+.folio-prose ul,
+.folio-prose ol {
+  margin: 0 0 0.8em;
+  padding-left: 1.4em;
+}
+.folio-prose ul {
+  list-style: disc;
+}
+.folio-prose ol {
+  list-style: decimal;
+}
+.folio-prose li::marker {
+  color: var(--ink-3);
+}
+.folio-prose li {
+  margin: 0.2em 0;
+  padding-left: 0.2em;
+}
+.folio-prose li p {
+  margin: 0;
+}
+.folio-prose blockquote {
+  margin: 1.2em 0;
+  padding-left: 1em;
+  border-left: 3px solid var(--line-strong);
+  color: var(--ink-2);
+  font-style: italic;
+}
+.folio-prose blockquote p:last-child {
+  margin-bottom: 0;
+}
+.folio-prose code {
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  background: var(--hover-soft);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.82em;
+}
+.folio-prose pre {
+  margin: 1.2em 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  font-size: 15px;
+  line-height: 1.6;
+  overflow-x: auto;
+}
+.folio-prose pre code {
+  padding: 0;
+  background: none;
+  font-size: 0.9em;
+}
+.folio-prose a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.folio-prose hr {
+  margin: 2em 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+.folio-prose p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  color: var(--ink-4);
+  pointer-events: none;
+}
+
+@media (max-width: 899px) {
+  .canvas {
+    padding: 20px 16px 72px;
+  }
+  .sheet__body {
+    padding: 40px 40px 64px;
+  }
+}
+@media (max-width: 639px) {
+  .canvas {
+    min-height: 100%;
+    padding: 0;
+    background: var(--surface);
+  }
+  .sheet {
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .toolbar,
+  .sheet__notice {
+    border-radius: 0;
+  }
+  .sheet__body {
+    padding: 28px 20px 56px;
+  }
+  .sheet__title {
+    font-size: 32px;
+  }
+  .folio-prose {
+    font-size: 17px;
+  }
+}
